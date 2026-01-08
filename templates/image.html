@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sắc Xuân AI — Tạo ảnh chúc Tết</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/logo/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/logo/favicon-16x16.png" />
+    <link rel="icon" href="/static/logo/favicon.ico" />
+    <link rel="manifest" href="/static/logo/site.webmanifest" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
+
+    <style>
+        :root {
+            --red-deep: #8B0000;
+            --red-medium: #A52A2A;
+            --gold: #D4AF37;
+            --gold-light: #F4E4BA;
+            --white: #FEFEFA;
+            --beige: #F5F5DC;
+            --text-dark: #2D1810;
+            --text-muted: rgba(45, 24, 16, 0.72);
+            --shadow-soft: 0 10px 40px rgba(139, 0, 0, 0.14);
+            --shadow-strong: 0 18px 70px rgba(139, 0, 0, 0.18);
+            --radius: 18px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: "Be Vietnam Pro", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, var(--beige) 0%, var(--white) 50%, var(--gold-light) 100%);
+            overflow-x: hidden;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.38;
+            background:
+                radial-gradient(circle at 20% 15%, rgba(212, 175, 55, 0.16) 0 2px, transparent 3px),
+                radial-gradient(circle at 70% 35%, rgba(139, 0, 0, 0.10) 0 2px, transparent 3px),
+                radial-gradient(circle at 35% 75%, rgba(212, 175, 55, 0.12) 0 2px, transparent 3px),
+                radial-gradient(circle at 85% 80%, rgba(139, 0, 0, 0.08) 0 2px, transparent 3px);
+            background-size: 220px 220px;
+            mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1), rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%);
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .bg-pattern {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            background: rgba(254, 254, 250, 0.78);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.28);
+        }
+
+        .topbar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            gap: 12px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--red-deep);
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            font-size: 1.05rem;
+            white-space: nowrap;
+        }
+
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.95), rgba(212, 175, 55, 0.35));
+            border: 1px solid rgba(212, 175, 55, 0.55);
+            color: var(--red-deep);
+            box-shadow: 0 10px 30px rgba(139, 0, 0, 0.10);
+            overflow: hidden;
+        }
+
+        .brand-mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .brand span { color: var(--gold); }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            opacity: 1;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            color: rgba(45, 24, 16, 0.82);
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .nav a:hover {
+            border-color: rgba(212, 175, 55, 0.28);
+            background: rgba(212, 175, 55, 0.18);
+            color: var(--red-deep);
+        }
+
+        .topbar-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--red-deep), var(--red-medium));
+            border: 1px solid rgba(212, 175, 55, 0.55);
+            box-shadow: 0 12px 40px rgba(139, 0, 0, 0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .topbar-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 55px rgba(139, 0, 0, 0.22);
+        }
+
+        .topbar-cta i { color: var(--gold-light); }
+
+        .hero {
+            padding: 34px 0 18px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .card {
+            border-radius: var(--radius);
+            background: rgba(254, 254, 250, 0.86);
+            border: 1px solid rgba(212, 175, 55, 0.26);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .hero-card {
+            padding: 22px 22px 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::before {
+            content: "";
+            position: absolute;
+            inset: -40% -20% auto -20%;
+            height: 220px;
+            background: radial-gradient(circle at 30% 60%, rgba(212,175,55,0.22), transparent 60%);
+            filter: blur(10px);
+            pointer-events: none;
+        }
+
+        .kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.26);
+            background: rgba(254, 254, 250, 0.70);
+            color: rgba(45, 24, 16, 0.78);
+            font-size: 13px;
+        }
+
+        .h1 {
+            margin: 14px 0 10px;
+            font-size: clamp(26px, 3.2vw, 40px);
+            line-height: 1.12;
+            letter-spacing: -0.4px;
+        }
+
+        .lead {
+            margin: 0;
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .mini {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.24);
+            background: rgba(212, 175, 55, 0.10);
+            color: rgba(45, 24, 16, 0.86);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .hero-side {
+            padding: 18px;
+            display: grid;
+            gap: 10px;
+            align-content: start;
+        }
+
+        .side-title {
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .side-text {
+            color: rgba(45, 24, 16, 0.70);
+            line-height: 1.55;
+            font-size: 14px;
+        }
+
+        .section {
+            padding: 14px 0 24px;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .form-card {
+            padding: 18px;
+        }
+
+        .label {
+            font-size: 13px;
+            color: rgba(45, 24, 16, 0.72);
+            margin: 0 0 8px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.28);
+            background: rgba(254, 254, 250, 0.92);
+            color: var(--text-dark);
+            padding: 12px 12px;
+            line-height: 1.55;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: rgba(212, 175, 55, 0.46);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .chip {
+            cursor: pointer;
+            user-select: none;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.24);
+            background: rgba(212, 175, 55, 0.10);
+            color: rgba(45, 24, 16, 0.90);
+            font-size: 13px;
+        }
+
+        .chip:hover {
+            border-color: rgba(212, 175, 55, 0.46);
+            background: rgba(212, 175, 55, 0.14);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.26);
+            background: rgba(254, 254, 250, 0.86);
+            color: var(--text-dark);
+            cursor: pointer;
+            font-weight: 650;
+            letter-spacing: 0.1px;
+        }
+
+        .btn:hover {
+            border-color: rgba(212, 175, 55, 0.44);
+            background: rgba(212, 175, 55, 0.14);
+        }
+
+        .btn.primary {
+            border-color: rgba(212, 175, 55, 0.50);
+            background: linear-gradient(135deg, rgba(212,175,55,0.24), rgba(139,0,0,0.08));
+        }
+
+        .btn.danger {
+            border-color: rgba(139, 0, 0, 0.20);
+            background: rgba(139, 0, 0, 0.06);
+        }
+
+        .status {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.26);
+            background: rgba(254, 254, 250, 0.78);
+            color: rgba(45, 24, 16, 0.88);
+            display: none;
+        }
+
+        .status.show { display: block; }
+
+        .status.error {
+            border-color: rgba(139, 0, 0, 0.28);
+            background: rgba(139, 0, 0, 0.06);
+        }
+
+        .out-card {
+            padding: 18px;
+        }
+
+        .out-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .out-title {
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .preview {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 16px;
+            border: 1px solid rgba(212, 175, 55, 0.22);
+            background:
+                radial-gradient(circle at 30% 30%, rgba(212,175,55,0.18), transparent 60%),
+                rgba(254, 254, 250, 0.66);
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            position: relative;
+        }
+
+        .preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .preview.has-image img {
+            display: block;
+        }
+
+        .preview .hint {
+            padding: 14px 14px;
+            color: rgba(45, 24, 16, 0.66);
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .footer {
+            padding: 26px 0 42px;
+            border-top: 1px solid rgba(212, 175, 55, 0.20);
+            margin-top: 20px;
+        }
+
+        .footer-grid {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .footer small {
+            color: rgba(45, 24, 16, 0.64);
+            line-height: 1.5;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 700ms ease, transform 700ms ease;
+        }
+
+        .reveal.in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 920px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .section-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 520px) {
+            .nav { gap: 8px; }
+            .nav a { padding: 7px 9px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { transition: none; transform: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern" aria-hidden="true"></div>
+
+    <header class="topbar">
+        <div class="container">
+            <div class="topbar-inner">
+                <a class="brand" href="/" aria-label="Về trang chủ">
+                    <span class="brand-mark"><img src="/static/logo/android-chrome-192x192.png" alt="Sắc Xuân AI" /></span>
+                    <span>Sắc</span> Xuân AI
+                </a>
+
+                <nav class="nav" aria-label="Điều hướng">
+                    <a href="/">Trang chủ</a>
+                    <a href="/main">Tạo thơ</a>
+                    <a href="/image">Tạo ảnh</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-grid reveal">
+                    <div class="card hero-card">
+                        <div class="kicker"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> AI tạo ảnh từ prompt</div>
+                        <h1 class="h1">Biến lời chúc thành hình ảnh Tết</h1>
+                        <p class="lead">Nhập một prompt (ý tưởng / nội dung / phong cách), AI sẽ tạo một ảnh minh hoạ để bạn đăng mạng xã hội hoặc gửi lời chúc.</p>
+                        <div class="mini">
+                            <span class="pill"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Nhanh</span>
+                            <span class="pill"><i class="fa-solid fa-shield" aria-hidden="true"></i> Key ở server</span>
+                            <span class="pill"><i class="fa-solid fa-download" aria-hidden="true"></i> Tải ảnh</span>
+                        </div>
+                    </div>
+                    <aside class="card hero-side">
+                        <div class="side-title">Gợi ý prompt hay</div>
+                        <div class="side-text">Nên nêu: chủ thể, bối cảnh, màu sắc, cảm xúc, phong cách (poster/vector/3D), chữ trên ảnh (nếu cần).</div>
+                        <div class="side-text">Ví dụ: “Poster Tết, nền đỏ vàng, hoa mai, lân múa, chữ Chúc Mừng Năm Mới, phong cách tối giản, ánh sáng mềm”.</div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <div class="section-grid">
+                    <div class="card form-card reveal">
+                        <div class="label">Prompt</div>
+                        <textarea id="prompt" placeholder="Ví dụ: Poster Tết tối giản, hoa mai vàng, rồng cách điệu, chữ ‘An Khang Thịnh Vượng’, màu đỏ vàng, phong cách hiện đại."></textarea>
+
+                        <div class="chips" aria-label="Gợi ý prompt nhanh">
+                            <span class="chip" data-p="Poster Tết tối giản, nền đỏ vàng, hoa mai vàng, chữ ‘Chúc Mừng Năm Mới’, phong cách hiện đại, ánh sáng mềm.">Poster tối giản</span>
+                            <span class="chip" data-p="Minh hoạ vector, lân múa trước cổng làng ngày Tết, pháo hoa, màu rực rỡ, dễ thương.">Vector lân múa</span>
+                            <span class="chip" data-p="Tranh phong cách cổ phong, cành đào, câu đối đỏ, không khí ấm áp, chi tiết tinh tế.">Cổ phong</span>
+                            <span class="chip" data-p="Sticker chibi dễ thương chúc Tết, nền trong suốt (nếu hỗ trợ), màu pastel, nét vẽ sạch.">Sticker chibi</span>
+                        </div>
+
+                        <div class="actions">
+                            <button class="btn primary" id="btnGenerate" type="button"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo ảnh</button>
+                            <button class="btn" id="btnCopyPrompt" type="button"><i class="fa-regular fa-copy" aria-hidden="true"></i>Copy prompt</button>
+                            <button class="btn danger" id="btnClear" type="button"><i class="fa-solid fa-trash" aria-hidden="true"></i>Xoá</button>
+                        </div>
+
+                        <div class="status" id="status"></div>
+                    </div>
+
+                    <div class="card out-card reveal">
+                        <div class="out-head">
+                            <div class="out-title">Kết quả</div>
+                            <div class="actions" style="margin:0">
+                                <a class="btn" id="btnDownload" download="sac-xuan-ai.png" href="#" style="pointer-events:none; opacity:0.6;"><i class="fa-solid fa-download" aria-hidden="true"></i>Tải ảnh</a>
+                            </div>
+                        </div>
+                        <div class="preview" id="preview">
+                            <img id="img" alt="Ảnh do AI tạo" />
+                            <div class="hint" id="hint">Chưa có ảnh. Nhập prompt rồi bấm “Tạo ảnh”.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div style="font-weight: 700; letter-spacing: 0.2px;">Sắc Xuân AI</div>
+                    <small>AI tạo thơ & ảnh chúc Tết — giao diện tối giản, đậm không khí xuân.</small>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; opacity:0.85;">
+                    <a href="/" class="pill"><i class="fa-solid fa-house" aria-hidden="true"></i>Trang chủ</a>
+                    <a href="/main" class="pill"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i>Tạo thơ</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            const promptEl = document.getElementById('prompt');
+            const statusEl = document.getElementById('status');
+            const btnGenerate = document.getElementById('btnGenerate');
+            const btnCopyPrompt = document.getElementById('btnCopyPrompt');
+            const btnClear = document.getElementById('btnClear');
+            const preview = document.getElementById('preview');
+            const img = document.getElementById('img');
+            const hint = document.getElementById('hint');
+            const btnDownload = document.getElementById('btnDownload');
+
+            function setStatus(text, kind) {
+                statusEl.textContent = text || '';
+                statusEl.classList.remove('show', 'error');
+                if (text) {
+                    statusEl.classList.add('show');
+                    if (kind === 'error') statusEl.classList.add('error');
+                }
+            }
+
+            function setDownloading(enabled) {
+                if (enabled) {
+                    btnDownload.style.pointerEvents = 'auto';
+                    btnDownload.style.opacity = '1';
+                } else {
+                    btnDownload.style.pointerEvents = 'none';
+                    btnDownload.style.opacity = '0.6';
+                    btnDownload.removeAttribute('href');
+                }
+            }
+
+            async function generate() {
+                const prompt = (promptEl.value || '').trim();
+                if (!prompt) {
+                    setStatus('Bạn hãy nhập prompt trước đã.', 'error');
+                    promptEl.focus();
+                    return;
+                }
+
+                setStatus('Đang tạo ảnh… (có thể mất vài giây)', 'info');
+                preview.classList.remove('has-image');
+                img.removeAttribute('src');
+                hint.textContent = 'Đang tạo ảnh…';
+                setDownloading(false);
+
+                const res = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok || !json || json.status !== 'success') {
+                    const msg = (json && (json.error || json.message)) || 'Không thể tạo ảnh. Kiểm tra server log / OPENAI_API_KEY.';
+                    setStatus(msg, 'error');
+                    hint.textContent = 'Có lỗi khi tạo ảnh.';
+                    return;
+                }
+
+                const dataUrl = json.image;
+                if (!dataUrl || typeof dataUrl !== 'string') {
+                    setStatus('Server trả về dữ liệu ảnh không hợp lệ.', 'error');
+                    hint.textContent = 'Có lỗi khi tạo ảnh.';
+                    return;
+                }
+
+                img.src = dataUrl;
+                preview.classList.add('has-image');
+                hint.textContent = '';
+                setStatus('Xong! Bạn có thể tải ảnh.', 'info');
+                btnDownload.href = dataUrl;
+                setDownloading(true);
+            }
+
+            btnGenerate.addEventListener('click', () => { generate(); });
+            promptEl.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    generate();
+                }
+            });
+
+            btnCopyPrompt.addEventListener('click', async () => {
+                const text = (promptEl.value || '').trim();
+                if (!text) {
+                    setStatus('Chưa có prompt để copy.', 'error');
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(text);
+                    setStatus('Đã copy prompt.', 'info');
+                } catch {
+                    setStatus('Không thể copy (trình duyệt chặn).', 'error');
+                }
+            });
+
+            btnClear.addEventListener('click', () => {
+                promptEl.value = '';
+                setStatus('', 'info');
+                preview.classList.remove('has-image');
+                img.removeAttribute('src');
+                hint.textContent = 'Chưa có ảnh. Nhập prompt rồi bấm “Tạo ảnh”.';
+                setDownloading(false);
+                promptEl.focus();
+            });
+
+            document.querySelectorAll('.chip').forEach((chip) => {
+                chip.addEventListener('click', () => {
+                    const p = chip.getAttribute('data-p') || '';
+                    if (!p) return;
+                    promptEl.value = p;
+                    promptEl.focus();
+                });
+            });
+
+            // Scroll reveal
+            const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!reduced && 'IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    for (const en of entries) {
+                        if (en.isIntersecting) {
+                            en.target.classList.add('in');
+                            io.unobserve(en.target);
+                        }
+                    }
+                }, { threshold: 0.12 });
+
+                document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+            } else {
+                document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+            }
+        })();
+    </script>
+</body>
+</html>
