@@ -26,8 +26,8 @@
             --white: #FEFEFA;
             --beige: #F5F5DC;
             --text-dark: #2D1810;
-            --shadow-soft: 0 10px 40px rgba(139, 0, 0, 0.12);
-            --shadow-strong: 0 18px 70px rgba(139, 0, 0, 0.18);
+            --shadow-soft: 0 8px 28px rgba(139, 0, 0, 0.10);
+            --shadow-strong: 0 14px 50px rgba(139, 0, 0, 0.14);
         }
 
         @font-face {
@@ -54,7 +54,7 @@
             inset: 0;
             pointer-events: none;
             z-index: 0;
-            opacity: 0.38;
+            opacity: 0.22;
             background:
                 radial-gradient(circle at 20% 15%, rgba(212, 175, 55, 0.16) 0 2px, transparent 3px),
                 radial-gradient(circle at 70% 35%, rgba(139, 0, 0, 0.10) 0 2px, transparent 3px),
@@ -64,10 +64,42 @@
             mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1), rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%);
         }
 
+        .watermark {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .watermark::before,
+        .watermark::after {
+            content: '';
+            position: absolute;
+            top: 58%;
+            width: min(520px, 64vw);
+            height: min(520px, 64vw);
+            transform: translateY(-50%);
+            background-image: url('/static/image/horse.png');
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0.21;
+            filter: sepia(1) saturate(7) hue-rotate(8deg) contrast(1.08) brightness(1.02);
+            mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1), rgba(0,0,0,0.25) 60%, rgba(0,0,0,0) 100%);
+        }
+
+        .watermark::before {
+            left: max(24px, 2.5vw);
+            transform: translateY(-50%) scaleX(-1);
+        }
+
+        .watermark::after {
+            right: max(24px, 2.5vw);
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 28px 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -177,8 +209,101 @@
             color: var(--gold-light);
         }
 
+        .menu-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(254, 254, 250, 0.86);
+            color: var(--red-deep);
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .menu-toggle:hover {
+            border-color: rgba(212, 175, 55, 0.55);
+            background: rgba(244, 228, 186, 0.75);
+            transform: translateY(-1px);
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(45, 24, 16, 0.22);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 160ms ease;
+            z-index: 240;
+        }
+
+        body.menu-open .menu-backdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-nav {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px 14px;
+            opacity: 0;
+            transform: translate3d(0, -8px, 0);
+            pointer-events: none;
+            will-change: transform, opacity;
+            transition: opacity 160ms ease, transform 180ms ease;
+            z-index: 250;
+            background: rgba(254, 254, 250, 0.92);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(212, 175, 55, 0.18);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+            box-shadow: 0 18px 40px rgba(45, 24, 16, 0.10);
+            border-radius: 0 0 18px 18px;
+        }
+
+        .mobile-nav.open {
+            display: grid;
+            gap: 8px;
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+            pointer-events: auto;
+        }
+
+        .mobile-nav a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.26);
+            background: rgba(254, 254, 250, 0.86);
+            font-weight: 750;
+            color: rgba(45, 24, 16, 0.86);
+            text-decoration: none;
+        }
+
+        .mobile-nav a:active {
+            transform: translateY(1px);
+        }
+
+        @media (max-width: 520px) {
+            .watermark::before,
+            .watermark::after {
+                width: min(280px, 40vw);
+                height: min(280px, 40vw);
+                top: 54%;
+            }
+        }
+
         .hero {
-            padding: 34px 0 10px;
+            padding: 40px 0 18px;
             position: relative;
             z-index: 10;
         }
@@ -242,9 +367,9 @@
             flex: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
+            gap: 34px;
             align-items: center;
-            padding: 34px 20px 10px;
+            padding: 34px 20px 24px;
         }
 
         .text-section {
@@ -522,6 +647,11 @@
             border-color: var(--gold);
         }
 
+        /* Animated mobile nav (keeps focus, reduces clutter) */
+        .mobile-nav {
+            display: none;
+        }
+
         .feature-card:hover::before {
             opacity: 1;
         }
@@ -594,6 +724,11 @@
             top: calc(12% + 58px);
             left: 310px;
             font-size: 3.5rem;
+        }
+
+        /* Keep the landing page visually clean (no overlay calligraphy) */
+        .decoration {
+            display: none;
         }
 
         .reveal {
@@ -728,9 +863,13 @@
                 display: none;
             }
 
+            .menu-toggle {
+                display: inline-flex;
+            }
+
             .model-section {
-                order: -1;
-                height: 350px;
+                order: 0;
+                height: 320px;
             }
 
             .model-nav {
@@ -773,6 +912,25 @@
             .footer-inner {
                 grid-template-columns: 1fr;
             }
+
+            .mobile-nav {
+                display: grid;
+                gap: 8px;
+                padding: 0 14px 12px;
+                max-height: 0;
+                opacity: 0;
+                overflow: hidden;
+                transform: translateY(-6px);
+                pointer-events: none;
+                transition: max-height 260ms ease, opacity 200ms ease, transform 260ms ease;
+            }
+
+            .mobile-nav.open {
+                max-height: 240px;
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
         }
 
         /* Mobile */
@@ -781,15 +939,19 @@
                 padding: 10px 12px;
             }
 
+            .mobile-nav {
+                padding: 0 12px 12px;
+            }
+
             .topbar-cta {
                 padding: 9px 12px;
                 font-size: 0.9rem;
             }
 
             .main-content {
-                grid-template-columns: 1.05fr 0.95fr;
-                gap: 14px;
-                align-items: center;
+                grid-template-columns: 1fr;
+                gap: 16px;
+                align-items: start;
                 text-align: left;
                 padding: 18px 10px;
             }
@@ -817,8 +979,8 @@
             }
 
             .model-section {
-                height: 260px;
-                justify-content: flex-end;
+                height: min(340px, 58vh);
+                justify-content: center;
             }
 
             .model-nav {
@@ -862,7 +1024,7 @@
             .features {
                 grid-template-columns: 1fr;
                 gap: 15px;
-                padding: 30px 10px 40px;
+                padding: 34px 10px 44px;
             }
 
             .feature-card {
@@ -886,9 +1048,7 @@
                 margin-bottom: 5px;
             }
 
-            .decoration {
-                display: none;
-            }
+            .decoration { display: none; }
 
             .section-header {
                 margin: 0 10px 14px;
@@ -913,7 +1073,7 @@
             }
 
             .model-section {
-                height: 250px;
+                height: min(340px, 60vh);
                 justify-content: center;
             }
         }
@@ -926,6 +1086,11 @@
             .topbar-cta,
             .feature-card {
                 transition: none;
+            }
+
+            .mobile-nav {
+                transition: none;
+                transform: none;
             }
         }
 
@@ -944,6 +1109,8 @@
     </style>
 </head>
 <body>
+    <div class="watermark" aria-hidden="true"></div>
+    <div class="menu-backdrop" id="menuBackdrop" aria-hidden="true"></div>
     <div class="decoration decoration-1">Xuân đến an khang khai phúc lộc</div>
     <div class="decoration decoration-2">Tết về thịnh vượng đón tài danh</div>
 
@@ -958,6 +1125,16 @@
                 <a href="/main">Tạo thơ</a>
                 <a href="/image">Tạo ảnh</a>
             </nav>
+
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Mở menu" aria-expanded="false" aria-controls="mobileNav">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="mobile-nav" id="mobileNav" aria-label="Điều hướng (mobile)">
+            <a href="/">Trang chủ <i class="fa-solid fa-house" aria-hidden="true"></i></a>
+            <a href="/main">Tạo thơ <i class="fa-solid fa-pen-nib" aria-hidden="true"></i></a>
+            <a href="/image">Tạo ảnh <i class="fa-regular fa-image" aria-hidden="true"></i></a>
         </div>
     </div>
 
@@ -1106,6 +1283,45 @@
         (function() {
             document.getElementById('year').textContent = String(new Date().getFullYear());
 
+            // Mobile menu toggle
+            (function setupMobileMenu() {
+                const btn = document.getElementById('menuToggle');
+                const nav = document.getElementById('mobileNav');
+                if (!btn || !nav) return;
+
+                function setOpen(next) {
+                    const isOpen = Boolean(next);
+                    nav.classList.toggle('open', isOpen);
+                    document.body.classList.toggle('menu-open', isOpen);
+                    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    btn.setAttribute('aria-label', isOpen ? 'Đóng menu' : 'Mở menu');
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+                    }
+                }
+
+                const backdrop = document.getElementById('menuBackdrop');
+                if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') setOpen(false);
+                });
+
+                btn.addEventListener('click', () => {
+                    setOpen(!nav.classList.contains('open'));
+                });
+
+                nav.querySelectorAll('a').forEach((a) => {
+                    a.addEventListener('click', () => setOpen(false));
+                });
+
+                // Close when leaving mobile breakpoint
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth > 1024) setOpen(false);
+                });
+            })();
+
             // Scroll reveal
             (function setupReveal() {
                 const items = Array.from(document.querySelectorAll('.reveal'));
@@ -1140,7 +1356,7 @@
             const modelMeta = {
                 dragon: { label: 'Minh hoạ: Rồng', icon: 'fa-solid fa-dragon' },
                 dragon_lion: { label: 'Minh hoạ: Lân', icon: 'fa-solid fa-paw' },
-                turtle: { label: 'Minh hoạ: Quy', icon: 'fa-solid fa-turtle' },
+                turtle: { label: 'Minh hoạ: Quy', icon: 'fa-duotone fa-solid fa-turtle' },
                 phoenix: { label: 'Minh hoạ: Phụng', icon: 'fa-solid fa-feather-pointed' }
             };
             
@@ -1157,6 +1373,18 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.outputEncoding = THREE.sRGBEncoding;
             container.appendChild(renderer.domElement);
+
+            function resizeRenderer() {
+                const w = Math.max(1, container.clientWidth);
+                const h = Math.max(1, container.clientHeight);
+                renderer.setSize(w, h);
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+            }
+
+            window.addEventListener('resize', resizeRenderer);
+            // Some mobile browsers change layout after the first paint
+            setTimeout(resizeRenderer, 250);
             
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);

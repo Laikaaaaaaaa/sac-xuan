@@ -12,12 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         :root {
             --red-deep: #8B0000;
             --red-medium: #A52A2A;
@@ -26,9 +20,14 @@
             --white: #FEFEFA;
             --beige: #F5F5DC;
             --text-dark: #2D1810;
-            --shadow-soft: 0 10px 40px rgba(139, 0, 0, 0.14);
-            --shadow-strong: 0 18px 70px rgba(139, 0, 0, 0.18);
+            --text-muted: rgba(45, 24, 16, 0.74);
+            --card: rgba(254, 254, 250, 0.88);
+            --border: rgba(212, 175, 55, 0.26);
+            --shadow: 0 10px 32px rgba(139, 0, 0, 0.10);
+            --radius: 18px;
         }
+
+        * { box-sizing: border-box; }
 
         @font-face {
             font-family: 'TetCouplet';
@@ -36,16 +35,15 @@
             font-display: swap;
         }
 
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: 'Be Vietnam Pro', sans-serif;
-            background: linear-gradient(135deg, var(--beige) 0%, var(--white) 50%, var(--gold-light) 100%);
+            margin: 0;
+            font-family: 'Be Vietnam Pro', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, var(--beige) 0%, var(--white) 55%, var(--gold-light) 100%);
             min-height: 100vh;
             overflow-x: hidden;
-            color: var(--text-dark);
-        }
-
-        html {
-            scroll-behavior: smooth;
         }
 
         body::before {
@@ -54,15 +52,48 @@
             inset: 0;
             pointer-events: none;
             z-index: 0;
-            opacity: 0.38;
+            opacity: 0.12;
             background:
-                radial-gradient(circle at 20% 15%, rgba(212, 175, 55, 0.16) 0 2px, transparent 3px),
-                radial-gradient(circle at 70% 35%, rgba(139, 0, 0, 0.10) 0 2px, transparent 3px),
-                radial-gradient(circle at 35% 75%, rgba(212, 175, 55, 0.12) 0 2px, transparent 3px),
-                radial-gradient(circle at 85% 80%, rgba(139, 0, 0, 0.08) 0 2px, transparent 3px);
-            background-size: 220px 220px;
-            mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1), rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%);
+                radial-gradient(circle at 18% 16%, rgba(212, 175, 55, 0.16) 0 2px, transparent 3px),
+                radial-gradient(circle at 72% 34%, rgba(139, 0, 0, 0.10) 0 2px, transparent 3px),
+                radial-gradient(circle at 34% 76%, rgba(212, 175, 55, 0.12) 0 2px, transparent 3px);
+            background-size: 240px 240px;
+            mask-image: radial-gradient(circle at 50% 40%, rgba(0,0,0,1), rgba(0,0,0,0.35) 60%, rgba(0,0,0,0) 100%);
         }
+
+        .watermark {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .watermark::before,
+        .watermark::after {
+            content: '';
+            position: absolute;
+            top: 58%;
+            width: min(520px, 64vw);
+            height: min(520px, 64vw);
+            background-image: url('/static/image/horse.png');
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0.21;
+            filter: sepia(1) saturate(7) hue-rotate(8deg) contrast(1.08) brightness(1.02);
+            transform: translateY(-50%);
+            mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1), rgba(0,0,0,0.25) 60%, rgba(0,0,0,0) 100%);
+        }
+
+        .watermark::before {
+            left: max(24px, 2.5vw);
+            transform: translateY(-50%) scaleX(-1);
+        }
+
+        .watermark::after {
+            right: max(24px, 2.5vw);
+        }
+
+        a { color: inherit; text-decoration: none; }
 
         .page-wrapper {
             min-height: 100vh;
@@ -72,12 +103,22 @@
             z-index: 1;
         }
 
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .content {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
         .reveal {
             opacity: 0;
-            transform: translateY(14px);
-            transition: opacity 650ms ease, transform 650ms ease;
+            transform: translateY(10px);
+            transition: opacity 600ms ease, transform 600ms ease;
             transition-delay: var(--d, 0ms);
-            will-change: opacity, transform;
         }
 
         .reveal.in-view {
@@ -91,28 +132,25 @@
             z-index: 200;
             background: rgba(254, 254, 250, 0.78);
             backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(212, 175, 55, 0.28);
+            border-bottom: 1px solid var(--border);
         }
 
         .topbar-inner {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 12px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 14px;
+            padding: 12px 0;
+            gap: 12px;
         }
 
         .brand {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            text-decoration: none;
             color: var(--red-deep);
-            font-weight: 800;
+            font-weight: 850;
             letter-spacing: 0.2px;
-            font-size: 1.05rem;
+            font-size: 1.02rem;
             white-space: nowrap;
         }
 
@@ -120,13 +158,12 @@
             width: 34px;
             height: 34px;
             border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, 0.55);
+            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.95), rgba(212, 175, 55, 0.35));
+            box-shadow: 0 10px 30px rgba(139, 0, 0, 0.08);
             display: grid;
             place-items: center;
-            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.95), rgba(212, 175, 55, 0.35));
-            border: 1px solid rgba(212, 175, 55, 0.55);
-            color: var(--red-deep);
-            box-shadow: 0 10px 30px rgba(139, 0, 0, 0.10);
-            overflow: hidden;
         }
 
         .brand-mark img {
@@ -136,9 +173,7 @@
             display: block;
         }
 
-        .brand span {
-            color: var(--gold);
-        }
+        .brand span { color: var(--gold); }
 
         .nav {
             display: flex;
@@ -148,251 +183,205 @@
         }
 
         .nav a {
-            text-decoration: none;
-            color: rgba(45, 24, 16, 0.82);
-            font-weight: 600;
-            font-size: 0.95rem;
-            padding: 8px 12px;
+            padding: 8px 10px;
             border-radius: 999px;
-            transition: background 0.2s ease, color 0.2s ease;
+            border: 1px solid transparent;
+            color: rgba(45, 24, 16, 0.82);
+            font-weight: 650;
+            font-size: 0.95rem;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
             white-space: nowrap;
         }
 
         .nav a:hover {
-            background: rgba(212, 175, 55, 0.18);
+            border-color: rgba(212, 175, 55, 0.28);
+            background: rgba(212, 175, 55, 0.14);
             color: var(--red-deep);
         }
 
-        .topbar-cta {
+        .menu-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(254, 254, 250, 0.86);
+            color: var(--red-deep);
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .menu-toggle:hover {
+            border-color: rgba(212, 175, 55, 0.55);
+            background: rgba(244, 228, 186, 0.65);
+            transform: translateY(-1px);
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(45, 24, 16, 0.22);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 160ms ease;
+            z-index: 240;
+        }
+
+        body.menu-open .menu-backdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-nav {
+            display: none;
+        }
+
+        .mobile-nav a {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            padding: 10px 14px;
-            border-radius: 999px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: var(--white);
-            background: linear-gradient(135deg, var(--red-deep), var(--red-medium));
-            border: 1px solid rgba(212, 175, 55, 0.55);
-            box-shadow: 0 12px 40px rgba(139, 0, 0, 0.18);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            white-space: nowrap;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(254, 254, 250, 0.86);
+            font-weight: 750;
+            color: rgba(45, 24, 16, 0.86);
         }
 
-        .topbar-cta:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 55px rgba(139, 0, 0, 0.22);
-        }
-
-        .topbar-cta i {
-            color: var(--gold-light);
-        }
-
-        .page-hero {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 26px 24px 6px;
+        .hero {
+            padding: 26px 0 12px;
             text-align: center;
         }
 
-        .hero-kicker {
+        .kicker {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
+            gap: 8px;
+            padding: 8px 12px;
             border-radius: 999px;
-            border: 1px solid rgba(212, 175, 55, 0.35);
+            border: 1px solid rgba(212, 175, 55, 0.26);
             background: rgba(254, 254, 250, 0.72);
-            box-shadow: 0 10px 30px rgba(139, 0, 0, 0.08);
-            color: rgba(45, 24, 16, 0.84);
-            font-weight: 600;
-            font-size: 0.95rem;
+            color: rgba(45, 24, 16, 0.78);
+            font-size: 13px;
         }
 
-        .hero-kicker i {
-            color: var(--gold);
-        }
+        .kicker i { color: var(--gold); }
 
-        .hero-title {
-            font-size: clamp(1.9rem, 2vw + 1.2rem, 2.6rem);
-            font-weight: 900;
+        .h1 {
+            margin: 12px 0 8px;
+            font-size: clamp(26px, 2.6vw, 38px);
+            line-height: 1.12;
+            letter-spacing: -0.3px;
             color: var(--red-deep);
-            line-height: 1.15;
-            margin: 14px 0 10px;
-            text-shadow: 0 10px 28px rgba(139, 0, 0, 0.10);
+            font-weight: 900;
         }
 
-        .hero-title .highlight {
-            color: var(--gold);
-        }
+        .h1 .highlight { color: var(--gold); }
 
-        .hero-subtitle {
-            font-size: 1.03rem;
-            line-height: 1.85;
-            opacity: 0.86;
+        .lead {
             margin: 0 auto;
-            max-width: 780px;
+            max-width: 760px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            font-size: 15px;
         }
 
-        .hero-divider {
-            content: '';
-            display: block;
-            width: min(720px, 92vw);
+        .divider {
             height: 1px;
+            width: min(720px, 92vw);
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.75), transparent);
             margin: 18px auto 0;
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.85), transparent);
         }
 
-        .poem-layout {
-            flex: 1;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 18px 24px 6px;
+        .grid {
+            padding: 18px 0 8px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 18px;
+            gap: 16px;
             align-items: start;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.86);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(212, 175, 55, 0.30);
-            border-radius: 20px;
-            box-shadow: var(--shadow-soft);
+            border-radius: var(--radius);
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
             padding: 18px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card:hover {
-            box-shadow: var(--shadow-strong);
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            inset: -120px;
-            background:
-                radial-gradient(circle at 18% 18%, rgba(212, 175, 55, 0.12), transparent 55%),
-                radial-gradient(circle at 80% 26%, rgba(139, 0, 0, 0.08), transparent 58%);
-            pointer-events: none;
-        }
-
-        .card > * {
-            position: relative;
-            z-index: 1;
         }
 
         .card-title {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin: 0 0 8px;
             color: var(--red-deep);
             font-weight: 900;
             letter-spacing: 0.2px;
-            font-size: 1.15rem;
+            font-size: 1.05rem;
         }
 
-        .card-title i {
-            color: var(--gold);
-        }
+        .card-title i { color: var(--gold); }
 
         .card-subtitle {
-            opacity: 0.82;
-            line-height: 1.75;
-            margin-bottom: 14px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .field {
-            display: grid;
-            gap: 8px;
-        }
-
-        .field.span-2 {
-            grid-column: 1 / -1;
+            margin: 0 0 14px;
+            color: var(--text-muted);
+            line-height: 1.65;
+            font-size: 14px;
         }
 
         label {
+            display: inline-block;
+            margin-bottom: 8px;
             font-weight: 750;
             color: rgba(45, 24, 16, 0.82);
             font-size: 0.92rem;
         }
 
-        input, select, textarea {
+        textarea {
             width: 100%;
             padding: 12px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(212, 175, 55, 0.35);
-            background: rgba(254, 254, 250, 0.80);
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.30);
+            background: rgba(254, 254, 250, 0.92);
             color: var(--text-dark);
             outline: none;
-            font-family: 'Be Vietnam Pro', sans-serif;
+            font-family: inherit;
+            line-height: 1.55;
+            min-height: 112px;
+            resize: vertical;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 96px;
-            line-height: 1.55;
-        }
-
-        .status {
-            margin-top: 10px;
-            padding: 10px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(212, 175, 55, 0.30);
-            background: rgba(254, 254, 250, 0.70);
-            opacity: 0.9;
-            display: none;
-        }
-
-        .status.show {
-            display: block;
-        }
-
-        .status.error {
-            border-color: rgba(139, 0, 0, 0.35);
-            background: rgba(139, 0, 0, 0.08);
-        }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: rgba(212, 175, 55, 0.75);
-            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.18);
+        textarea:focus {
+            border-color: rgba(212, 175, 55, 0.55);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
         }
 
         .chips {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         .chip {
-            padding: 8px 12px;
-            border-radius: 999px;
-            border: 1px solid rgba(212, 175, 55, 0.35);
-            background: rgba(244, 228, 186, 0.55);
-            font-weight: 750;
-            font-size: 0.9rem;
-            color: rgba(45, 24, 16, 0.85);
-            cursor: pointer;
-            transition: transform 0.2s ease, background 0.2s ease;
             user-select: none;
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.24);
+            background: rgba(212, 175, 55, 0.10);
+            color: rgba(45, 24, 16, 0.88);
+            font-size: 13px;
+            font-weight: 650;
         }
 
         .chip:hover {
-            transform: translateY(-1px);
-            background: rgba(244, 228, 186, 0.80);
+            border-color: rgba(212, 175, 55, 0.42);
+            background: rgba(212, 175, 55, 0.14);
         }
 
         .actions {
@@ -405,37 +394,44 @@
         .btn {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px 14px;
-            border-radius: 12px;
-            border: 1px solid rgba(212, 175, 55, 0.45);
+            gap: 9px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.26);
+            background: rgba(254, 254, 250, 0.86);
+            color: var(--text-dark);
             cursor: pointer;
-            font-weight: 850;
-            font-size: 0.98rem;
-            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-            user-select: none;
+            font-weight: 700;
+            letter-spacing: 0.1px;
+            transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .btn:hover {
+            border-color: rgba(212, 175, 55, 0.44);
+            background: rgba(212, 175, 55, 0.12);
+            transform: translateY(-1px);
         }
 
         .btn-primary {
-            color: var(--white);
-            background: linear-gradient(135deg, var(--red-deep), var(--red-medium));
-            box-shadow: 0 18px 55px rgba(139, 0, 0, 0.20);
+            border-color: rgba(212, 175, 55, 0.50);
+            background: linear-gradient(135deg, rgba(212,175,55,0.22), rgba(139,0,0,0.08));
         }
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 22px 66px rgba(139, 0, 0, 0.24);
+        .status {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.24);
+            background: rgba(254, 254, 250, 0.78);
+            color: rgba(45, 24, 16, 0.88);
+            display: none;
         }
 
-        .btn-ghost {
-            background: rgba(254, 254, 250, 0.80);
-            color: rgba(45, 24, 16, 0.86);
-        }
+        .status.show { display: block; }
 
-        .btn-ghost:hover {
-            transform: translateY(-1px);
-            background: rgba(244, 228, 186, 0.75);
+        .status.error {
+            border-color: rgba(139, 0, 0, 0.24);
+            background: rgba(139, 0, 0, 0.06);
         }
 
         .toggle {
@@ -444,7 +440,7 @@
             gap: 10px;
             margin-top: 10px;
             font-weight: 750;
-            opacity: 0.9;
+            color: rgba(45, 24, 16, 0.82);
         }
 
         .toggle input {
@@ -453,18 +449,22 @@
             accent-color: var(--red-deep);
         }
 
-        .poem-output {
-            display: grid;
-            gap: 12px;
+        .meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            color: var(--text-muted);
+            font-size: 13px;
         }
 
         .poem-box {
+            margin-top: 12px;
             border-radius: 16px;
-            border: 1px solid rgba(212, 175, 55, 0.30);
-            background:
-                radial-gradient(circle at 30% 10%, rgba(212, 175, 55, 0.12), transparent 55%),
-                linear-gradient(180deg, rgba(254, 254, 250, 0.88), rgba(244, 228, 186, 0.48));
-            padding: 16px;
+            border: 1px solid rgba(212, 175, 55, 0.22);
+            background: rgba(254, 254, 250, 0.66);
+            padding: 14px 14px;
             min-height: 220px;
         }
 
@@ -472,344 +472,67 @@
             margin: 0;
             white-space: pre-wrap;
             line-height: 1.8;
-            font-size: 1.02rem;
-            color: rgba(45, 24, 16, 0.90);
+            font-size: 15px;
+            color: rgba(45, 24, 16, 0.92);
         }
 
         .poem-text.calligraphy {
             font-family: 'TetCouplet', 'Be Vietnam Pro', sans-serif;
-            font-size: 1.18rem;
+            font-size: 1.14rem;
             letter-spacing: 0.2px;
-        }
-
-        .meta-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            flex-wrap: wrap;
-            opacity: 0.86;
-            font-size: 0.92rem;
-        }
-
-        .meta-row b {
-            color: var(--red-deep);
-        }
-
-        .main-container {
-            flex: 1;
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 0;
-        }
-
-        .sidebar {
-            background: var(--white);
-            padding: 30px 20px;
-            border-right: 1px solid rgba(212, 175, 55, 0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sidebar::before {
-            content: '';
-            position: absolute;
-            inset: -60px;
-            background:
-                radial-gradient(circle at 18% 18%, rgba(212, 175, 55, 0.10), transparent 52%),
-                radial-gradient(circle at 82% 30%, rgba(139, 0, 0, 0.08), transparent 55%);
-            pointer-events: none;
-        }
-
-        .sidebar > * {
-            position: relative;
-            z-index: 1;
-        }
-
-        .sidebar-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--red-deep);
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--gold);
-        }
-
-        .creature-btn {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: var(--beige);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: left;
-        }
-
-        .creature-btn:hover {
-            border-color: var(--gold);
-            transform: translateX(5px);
-        }
-
-        .creature-btn.active {
-            background: linear-gradient(135deg, var(--red-deep) 0%, var(--red-medium) 100%);
-            color: var(--white);
-            border-color: var(--gold);
-        }
-
-        .creature-icon {
-            font-size: 1.6rem;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 10px;
-            color: var(--red-deep);
-            border: 1px solid rgba(212, 175, 55, 0.28);
-        }
-
-        .creature-btn.active .creature-icon {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(212, 175, 55, 0.55);
-            color: var(--white);
-        }
-
-        .creature-info h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-
-        .creature-info p {
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
-
-        .content-area {
-            display: flex;
-            flex-direction: column;
-            background: linear-gradient(180deg, var(--white) 0%, var(--beige) 100%);
-        }
-
-        .model-viewer {
-            flex: 1;
-            position: relative;
-            min-height: 400px;
-        }
-
-        #model-container {
-            width: 100%;
-            height: 100%;
-            cursor: grab;
-            background:
-                radial-gradient(circle at 50% 30%, rgba(212, 175, 55, 0.12), transparent 58%),
-                linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(244, 228, 186, 0.55));
-        }
-
-        #model-container:active {
-            cursor: grabbing;
-        }
-
-        .creature-details {
-            padding: 30px;
-            background: var(--white);
-            border-top: 1px solid rgba(212, 175, 55, 0.3);
-        }
-
-        .creature-details::before {
-            content: '';
-            display: block;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.85), transparent);
-            margin: -10px 0 20px;
-        }
-
-        .detail-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .detail-icon {
-            font-size: 2.2rem;
-            color: var(--red-deep);
-        }
-
-        .detail-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--red-deep);
-        }
-
-        .detail-subtitle {
-            font-size: 1rem;
-            color: var(--gold);
-            font-weight: 500;
-        }
-
-        .detail-description {
-            font-size: 1rem;
-            line-height: 1.8;
-            color: var(--text-dark);
-            opacity: 0.85;
-        }
-
-        .attributes {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .attribute {
-            background: var(--beige);
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            border: 1px solid rgba(212, 175, 55, 0.3);
-        }
-
-        .attribute strong {
-            color: var(--red-deep);
-        }
-
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(254, 254, 250, 0.9);
-            z-index: 10;
-        }
-
-        .loading-spinner {
-            text-align: center;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid var(--beige);
-            border-top-color: var(--red-deep);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: var(--red-medium);
-            font-size: 1rem;
-        }
-
-        .interaction-hint {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(139, 0, 0, 0.9);
-            color: var(--white);
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 0.85rem;
-            pointer-events: none;
-            opacity: 0.8;
-            z-index: 5;
-        }
-
-        .interaction-hint i {
-            margin-right: 8px;
-            color: var(--gold-light);
         }
 
         .footer {
             margin-top: auto;
-            padding: 22px 0 28px;
-            background: rgba(254, 254, 250, 0.55);
-            border-top: 1px solid rgba(212, 175, 55, 0.25);
+            padding: 26px 0 36px;
+            border-top: 1px solid rgba(212, 175, 55, 0.20);
+            background: rgba(254, 254, 250, 0.52);
         }
 
-        .footer-inner {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: grid;
-            grid-template-columns: 1.4fr 1fr 1fr;
-            gap: 18px;
-            align-items: start;
-        }
-
-        .footer-brand {
-            font-weight: 900;
-            color: var(--red-deep);
-            font-size: 1.05rem;
-            letter-spacing: 0.2px;
-            margin-bottom: 8px;
-        }
-
-        .footer-brand span { color: var(--gold); }
-
-        .footer-text {
-            opacity: 0.82;
-            line-height: 1.8;
-            max-width: 520px;
+        .footer-grid {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
         }
 
         .footer-title {
-            font-weight: 800;
+            font-weight: 850;
             color: var(--red-deep);
-            margin-bottom: 10px;
+            letter-spacing: 0.2px;
+            margin-bottom: 6px;
         }
 
-        .footer-links {
-            display: grid;
-            gap: 10px;
+        .footer small {
+            color: rgba(45, 24, 16, 0.64);
+            line-height: 1.55;
         }
 
-        .footer-links a {
-            text-decoration: none;
-            color: rgba(45, 24, 16, 0.84);
-            font-weight: 650;
+        .pill {
             display: inline-flex;
-            gap: 10px;
             align-items: center;
-            transition: color 0.2s ease, transform 0.2s ease;
+            gap: 8px;
+            padding: 9px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.24);
+            background: rgba(212, 175, 55, 0.10);
+            color: rgba(45, 24, 16, 0.86);
+            font-size: 13px;
+            white-space: nowrap;
         }
-
-        .footer-links a:hover {
-            color: var(--red-deep);
-            transform: translateX(2px);
-        }
-
-        .footer-links i { color: var(--gold); }
 
         .footer-bottom {
-            max-width: 1400px;
-            margin: 18px auto 0;
-            padding: 14px 20px 0;
-            border-top: 1px solid rgba(212, 175, 55, 0.22);
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(212, 175, 55, 0.18);
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
             flex-wrap: wrap;
-            opacity: 0.82;
-            font-size: 0.92rem;
+            color: rgba(45, 24, 16, 0.70);
+            font-size: 13px;
         }
 
         .social {
@@ -824,324 +547,178 @@
             border-radius: 999px;
             display: grid;
             place-items: center;
-            border: 1px solid rgba(212, 175, 55, 0.35);
-            background: rgba(254, 254, 250, 0.7);
+            border: 1px solid rgba(212, 175, 55, 0.30);
+            background: rgba(254, 254, 250, 0.70);
             color: var(--red-deep);
-            text-decoration: none;
             transition: transform 0.2s ease, background 0.2s ease;
         }
 
         .social a:hover {
             transform: translateY(-1px);
-            background: rgba(244, 228, 186, 0.75);
+            background: rgba(212, 175, 55, 0.12);
         }
 
-        /* iPad */
-        @media (max-width: 1024px) {
-            .main-container {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 920px) {
+            .grid { grid-template-columns: 1fr; }
+            .nav { display: none; }
+            .menu-toggle { display: inline-flex; }
 
-            .sidebar {
-                flex-direction: row;
-                overflow-x: auto;
-                padding: 15px;
-                gap: 10px;
-                border-right: none;
-                border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-            }
+            .topbar .container { position: relative; }
 
-            .sidebar-title {
-                display: none;
-            }
-
-            .creature-btn {
-                flex-direction: column;
-                min-width: 100px;
-                padding: 12px;
-                text-align: center;
+            .mobile-nav {
+                display: grid;
                 gap: 8px;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 100%;
+                padding: 12px 0 14px;
+                opacity: 0;
+                transform: translate3d(0, -8px, 0);
+                pointer-events: none;
+                will-change: transform, opacity;
+                transition: opacity 160ms ease, transform 180ms ease;
+                z-index: 250;
+                background: rgba(254, 254, 250, 0.92);
+                backdrop-filter: blur(12px);
+                border-top: 1px solid rgba(212, 175, 55, 0.18);
+                border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+                box-shadow: 0 18px 40px rgba(45, 24, 16, 0.10);
+                border-radius: 0 0 18px 18px;
             }
 
-            .creature-btn:hover {
-                transform: translateY(-3px);
-            }
-
-            .creature-icon {
-                width: 45px;
-                height: 45px;
-                font-size: 1.8rem;
-            }
-
-            .creature-info p {
-                display: none;
-            }
-
-            .model-viewer {
-                min-height: 350px;
-            }
-
-            .creature-details {
-                padding: 20px;
-            }
-
-            .attributes {
-                gap: 10px;
-            }
-
-            .poem-layout {
-                grid-template-columns: 1fr;
-                padding: 18px 14px 6px;
-            }
-
-            .topbar-inner {
-                padding: 10px 14px;
-            }
-
-            .nav {
-                display: none;
-            }
-
-            .page-hero {
-                padding: 22px 14px 6px;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .footer-inner {
-                grid-template-columns: 1fr;
+            .mobile-nav.open {
+                opacity: 1;
+                transform: translate3d(0, 0, 0);
+                pointer-events: auto;
             }
         }
 
-        /* Mobile */
-        @media (max-width: 768px) {
-            .topbar-inner {
-                padding: 10px 12px;
-            }
+        @media (max-width: 520px) {
+            .actions { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
 
-            .topbar-cta {
-                padding: 9px 12px;
-                font-size: 0.9rem;
-            }
-
-            .page-hero {
-                padding: 18px 12px 6px;
-            }
-
-            .sidebar {
-                padding: 10px;
-                gap: 8px;
-            }
-
-            .creature-btn {
-                min-width: 80px;
-                padding: 10px 8px;
-            }
-
-            .creature-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 1.5rem;
-            }
-
-            .creature-info h3 {
-                font-size: 0.85rem;
-            }
-
-            .model-viewer {
-                min-height: 280px;
-            }
-
-            .creature-details {
-                padding: 15px;
-            }
-
-            .detail-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 10px;
-            }
-
-            .detail-title {
-                font-size: 1.4rem;
-            }
-
-            .detail-description {
-                font-size: 0.95rem;
-                text-align: center;
-            }
-
-            .attributes {
-                justify-content: center;
-            }
-
-            .attribute {
-                padding: 8px 15px;
-                font-size: 0.85rem;
-            }
-
-            .interaction-hint {
-                font-size: 0.75rem;
-                padding: 8px 15px;
-                bottom: 10px;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .actions {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            .footer-inner {
-                padding: 0 20px;
-            }
-
-            .footer-bottom {
-                padding-left: 20px;
-                padding-right: 20px;
-            }
-        }
-
-        /* Mobile landscape */
-        @media (max-width: 768px) and (orientation: landscape) {
-            .main-container {
-                grid-template-columns: auto 1fr;
-            }
-
-            .sidebar {
-                flex-direction: column;
-                width: 80px;
-                border-bottom: none;
-                border-right: 1px solid rgba(212, 175, 55, 0.3);
-            }
-
-            .creature-btn {
-                min-width: auto;
-            }
-
-            .model-viewer {
-                min-height: 200px;
-            }
-
-            .creature-details {
-                display: none;
+            .watermark::before,
+            .watermark::after {
+                width: min(280px, 40vw);
+                height: min(280px, 40vw);
+                top: 54%;
             }
         }
 
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
             .reveal { transition: none; transform: none; opacity: 1; }
+            .mobile-nav { transition: none; transform: none; }
         }
     </style>
 </head>
 <body>
+    <div class="watermark" aria-hidden="true"></div>
+    <div class="menu-backdrop" id="menuBackdrop" aria-hidden="true"></div>
     <div class="page-wrapper">
-        <div class="topbar">
-            <div class="topbar-inner">
-                <a class="brand" href="/" aria-label="Về trang chủ">
-                    <span class="brand-mark"><img src="/static/logo/android-chrome-192x192.png" alt="Sắc Xuân AI" /></span>
-                    <span>Sắc</span> Xuân AI
-                </a>
-                <nav class="nav" aria-label="Điều hướng">
-                    <a href="/">Trang chủ</a>
-                    <a href="/main">Tạo thơ</a>
-                    <a href="/image">Tạo ảnh</a>
-                </nav>
+        <header class="topbar">
+            <div class="container">
+                <div class="topbar-inner">
+                    <a class="brand" href="/" aria-label="Về trang chủ">
+                        <span class="brand-mark"><img src="/static/logo/android-chrome-192x192.png" alt="Sắc Xuân AI" /></span>
+                        <span>Sắc</span> Xuân AI
+                    </a>
+
+                    <nav class="nav" aria-label="Điều hướng">
+                        <a href="/">Trang chủ</a>
+                        <a href="/main">Tạo thơ</a>
+                        <a href="/image">Tạo ảnh</a>
+                    </nav>
+
+                    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Mở menu" aria-expanded="false" aria-controls="mobileNav">
+                        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="mobile-nav" id="mobileNav" aria-label="Điều hướng (mobile)">
+                    <a href="/">Trang chủ <i class="fa-solid fa-house" aria-hidden="true"></i></a>
+                    <a href="/main">Tạo thơ <i class="fa-solid fa-pen-nib" aria-hidden="true"></i></a>
+                    <a href="/image">Tạo ảnh <i class="fa-regular fa-image" aria-hidden="true"></i></a>
+                </div>
             </div>
-        </div>
+        </header>
 
-        <section class="page-hero reveal" style="--d: 0ms;">
-            <div class="hero-kicker"><i class="fa-solid fa-microchip" aria-hidden="true"></i>Công nghệ giao thoa truyền thống</div>
-            <h1 class="hero-title"><span class="highlight">AI</span> tạo thơ chúc Tết</h1>
-            <p class="hero-subtitle">Nhập một prompt — nhận bài thơ chúc Tết gọn đẹp, dễ copy để gửi ngay.</p>
-            <span class="hero-divider" aria-hidden="true"></span>
-        </section>
-
-        <main class="poem-layout">
-            <section class="card reveal" style="--d: 80ms;" id="tao-tho">
-                <div class="card-title"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>AI tạo thơ chúc Tết</div>
-                <p class="card-subtitle">Nhập prompt theo ý bạn (người nhận, tông giọng, từ khoá, độ dài...). Nhấn “Tạo thơ” để nhận bài thơ gọn đẹp và dễ copy.</p>
-
-                <form id="poemForm" autocomplete="off">
-                    <div class="form-grid">
-                        <div class="field span-2">
-                            <label for="prompt">Prompt</label>
-                            <textarea id="prompt" name="prompt" placeholder="Ví dụ: Viết một bài thơ chúc Tết vui tươi cho bạn bè, nhắc tới an khang, tài lộc, sức khoẻ, độ dài 6 dòng."></textarea>
-                            <div class="chips" aria-label="Gợi ý prompt nhanh">
-                                <span class="chip" data-k="Viết thơ chúc Tết trang trọng cho sếp, 4 dòng, lịch sự.">Cho sếp (trang trọng)</span>
-                                <span class="chip" data-k="Viết thơ chúc Tết dễ thương cho người yêu, 6 dòng, có chút lãng mạn.">Cho người yêu</span>
-                                <span class="chip" data-k="Viết thơ chúc Tết hài hước cho bạn bè, 4 dòng, vui vui.">Cho bạn bè (hài)</span>
-                                <span class="chip" data-k="Viết câu đối chúc Tết cổ phong, 2 câu, nhắc phúc lộc thọ.">Câu đối cổ phong</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="actions">
-                        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo thơ</button>
-                        <button class="btn btn-ghost" id="regen" type="button"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i>Tạo lại</button>
-                    </div>
-
-                    <div class="status" id="status"></div>
-
-                    <label class="toggle" for="calligraphy">
-                        <input id="calligraphy" type="checkbox" />
-                        Hiển thị kiểu “thư pháp”
-                    </label>
-                </form>
+        <main>
+            <section class="hero reveal" style="--d: 0ms;">
+                <div class="container content">
+                    <div class="kicker"><i class="fa-solid fa-microchip" aria-hidden="true"></i>Gọn đẹp, dễ copy để gửi ngay</div>
+                    <h1 class="h1"><span class="highlight">AI</span> tạo thơ chúc Tết</h1>
+                    <p class="lead">Nhập prompt theo ý bạn (người nhận, tông giọng, từ khoá, độ dài…). Bấm “Tạo thơ” để nhận bài thơ gọn gàng và dễ chia sẻ.</p>
+                    <div class="divider" aria-hidden="true"></div>
+                </div>
             </section>
 
-            <section class="card reveal" style="--d: 140ms;" id="ket-qua">
-                <div class="card-title"><i class="fa-solid fa-feather-pointed" aria-hidden="true"></i>Bài thơ của bạn</div>
-                <div class="poem-output">
-                    <div class="meta-row">
-                        <span><b>Gợi ý:</b> bấm Tạo thơ, rồi Copy để gửi</span>
-                        <button class="btn btn-ghost" id="copy" type="button"><i class="fa-regular fa-copy" aria-hidden="true"></i>Copy</button>
-                    </div>
-                    <div class="poem-box">
-                        <pre id="poemText" class="poem-text">Nhấn “Tạo thơ” để bắt đầu.
+            <section class="container">
+                <div class="grid content">
+                    <section class="card reveal" style="--d: 80ms;" id="tao-tho">
+                        <div class="card-title"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo thơ</div>
+                        <p class="card-subtitle">Mẹo: thêm “an khang”, “tài lộc”, “bình an”… để thơ đúng vibe Tết hơn.</p>
+
+                        <form id="poemForm" autocomplete="off">
+                            <label for="prompt">Prompt</label>
+                            <textarea id="prompt" name="prompt" placeholder="Ví dụ: Viết một bài thơ chúc Tết vui tươi cho bạn bè, nhắc tới an khang, tài lộc, sức khoẻ, độ dài 6 dòng."></textarea>
+
+                            <div class="chips" aria-label="Gợi ý prompt nhanh">
+                                <span class="chip" data-k="Viết thơ chúc Tết trang trọng cho sếp, 4 dòng, lịch sự.">Cho sếp</span>
+                                <span class="chip" data-k="Viết thơ chúc Tết dễ thương cho người yêu, 6 dòng, có chút lãng mạn.">Người yêu</span>
+                                <span class="chip" data-k="Viết thơ chúc Tết hài hước cho bạn bè, 4 dòng, vui vui.">Bạn bè</span>
+                                <span class="chip" data-k="Viết câu đối chúc Tết cổ phong, 2 câu, nhắc phúc lộc thọ.">Câu đối</span>
+                            </div>
+
+                            <div class="actions">
+                                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo thơ</button>
+                                <button class="btn" id="regen" type="button"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i>Tạo lại</button>
+                            </div>
+
+                            <div class="status" id="status"></div>
+
+                            <label class="toggle" for="calligraphy">
+                                <input id="calligraphy" type="checkbox" />
+                                Chữ “thư pháp”
+                            </label>
+                        </form>
+                    </section>
+
+                    <section class="card reveal" style="--d: 140ms;" id="ket-qua">
+                        <div class="card-title"><i class="fa-solid fa-feather-pointed" aria-hidden="true"></i>Kết quả</div>
+                        <div class="meta-row">
+                            <span>Bấm tạo thơ rồi copy để gửi.</span>
+                            <button class="btn" id="copy" type="button"><i class="fa-regular fa-copy" aria-hidden="true"></i>Copy</button>
+                        </div>
+                        <div class="poem-box">
+                            <pre id="poemText" class="poem-text">Nhấn “Tạo thơ” để bắt đầu.
 Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
-                    </div>
+                        </div>
+                    </section>
                 </div>
             </section>
         </main>
 
         <footer class="footer" role="contentinfo">
-            <div class="footer-inner">
-                <div>
-                    <div class="footer-brand">Sắc <span>Xuân</span> AI</div>
-                    <p class="footer-text">AI tạo thơ chúc Tết — nhanh, gọn, đẹp và dễ copy để gửi ngay.</p>
-                </div>
-                <div>
-                    <div class="footer-title">Điều hướng</div>
-                    <div class="footer-links">
-                        <a href="/"><i class="fa-solid fa-house" aria-hidden="true"></i>Trang chủ</a>
-                        <a href="/image"><i class="fa-regular fa-image" aria-hidden="true"></i>Tạo ảnh</a>
-                        <a href="#" onclick="return false;"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>Hướng dẫn (tuỳ bạn)</a>
-                        <a href="#" onclick="return false;"><i class="fa-solid fa-shield" aria-hidden="true"></i>Chính sách (tuỳ bạn)</a>
+            <div class="container">
+                <div class="footer-grid">
+                    <div>
+                        <div class="footer-title">Sắc Xuân AI</div>
+                        <small>AI tạo thơ & ảnh chúc Tết — tối giản, nhanh, dễ dùng.</small>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; opacity:0.9;">
+                        <a href="/" class="pill"><i class="fa-solid fa-house" aria-hidden="true"></i>Trang chủ</a>
+                        <a href="/image" class="pill"><i class="fa-regular fa-image" aria-hidden="true"></i>Tạo ảnh</a>
                     </div>
                 </div>
-                <div>
-                    <div class="footer-title">Kết nối</div>
-                    <div class="footer-links">
-                        <a href="#" onclick="return false;"><i class="fa-solid fa-envelope" aria-hidden="true"></i>Liên hệ (tuỳ bạn bổ sung)</a>
-                        <a href="#" onclick="return false;"><i class="fa-solid fa-link" aria-hidden="true"></i>Portfolio / Demo</a>
+                <div class="footer-bottom">
+                    <span>© <span id="year"></span> Sắc Xuân AI</span>
+                    <div class="social" aria-label="Mạng xã hội">
+                        <a href="#" onclick="return false;" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+                        <a href="#" onclick="return false;" aria-label="TikTok"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
+                        <a href="#" onclick="return false;" aria-label="GitHub"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
                     </div>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <span>© <span id="year"></span> Sắc Xuân AI</span>
-                <div class="social" aria-label="Mạng xã hội">
-                    <a href="#" onclick="return false;" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
-                    <a href="#" onclick="return false;" aria-label="TikTok"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
-                    <a href="#" onclick="return false;" aria-label="GitHub"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
                 </div>
             </div>
         </footer>
@@ -1149,6 +726,42 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
     <script>
         (function() {
             document.getElementById('year').textContent = String(new Date().getFullYear());
+
+            // Mobile menu toggle
+            (function setupMobileMenu() {
+                const btn = document.getElementById('menuToggle');
+                const nav = document.getElementById('mobileNav');
+                if (!btn || !nav) return;
+
+                function setOpen(next) {
+                    const isOpen = Boolean(next);
+                    nav.classList.toggle('open', isOpen);
+                    document.body.classList.toggle('menu-open', isOpen);
+                    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    btn.setAttribute('aria-label', isOpen ? 'Đóng menu' : 'Mở menu');
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = isOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+                }
+
+                const backdrop = document.getElementById('menuBackdrop');
+                if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') setOpen(false);
+                });
+
+                btn.addEventListener('click', () => {
+                    setOpen(!nav.classList.contains('open'));
+                });
+
+                nav.querySelectorAll('a').forEach((a) => {
+                    a.addEventListener('click', () => setOpen(false));
+                });
+
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth > 920) setOpen(false);
+                });
+            })();
 
             // Scroll reveal (subtle)
             (function setupReveal() {

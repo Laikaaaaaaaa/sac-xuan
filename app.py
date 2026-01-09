@@ -82,6 +82,29 @@ def _get_openai_client():
     return OpenAI(api_key=api_key), None
 
 
+def _looks_off_topic(prompt: str) -> bool:
+    """Heuristic filter to keep /api/generate-poem focused on Tet poems."""
+    p = (prompt or '').strip().lower()
+    if not p:
+        return True
+
+    # Strong signals for general Q&A / troubleshooting / coding help
+    off_topic_markers = [
+        'là gì', 'là sao', 'nghĩa là', 'giải thích', 'tại sao', 'vì sao',
+        'how to', 'what is', 'why', 'explain',
+        'code', 'lỗi', 'bug', 'traceback', 'stack', 'python', 'flask', 'javascript',
+        'sql', 'api', 'server', 'deploy', 'cài đặt', 'setup', 'hướng dẫn',
+    ]
+    if any(m in p for m in off_topic_markers):
+        return True
+
+    # If it's mostly a question, it's likely off-topic.
+    if ('?' in p) and not any(k in p for k in ['thơ', 'chúc', 'tết', 'xuân', 'năm mới']):
+        return True
+
+    return False
+
+
 @app.route('/api/generate-poem', methods=['POST'])
 def api_generate_poem():
     """API: Generate a Tet wish poem from a single prompt."""
@@ -90,16 +113,29 @@ def api_generate_poem():
     if not prompt:
         return jsonify({'status': 'error', 'error': 'Missing prompt'}), 400
 
+    if _looks_off_topic(prompt):
+        return (
+            jsonify(
+                {
+                    'status': 'error',
+                    'error': 'Chỉ hỗ trợ viết thơ chúc Tết. Hãy gửi gợi ý như: người nhận, không khí, lời chúc, vài từ khóa.',
+                }
+            ),
+            400,
+        )
+
     client, err = _get_openai_client()
     if err:
         return jsonify({'status': 'error', 'error': err}), 500
 
     model = os.environ.get('OPENAI_TEXT_MODEL', 'gpt-4o-mini')
     system = (
-        'Bạn là một trợ lý tiếng Việt chuyên viết thơ chúc Tết. '
-        'Hãy tạo một bài thơ chúc Tết ngắn gọn, tự nhiên, dễ đọc, phù hợp để gửi tin nhắn. '
-        'Trả về đúng nội dung bài thơ, không thêm tiêu đề, không thêm giải thích.'
-    )
+        'Bạn là một thi sĩ tiếng Việt chuyên sáng tác thơ chúc Tết. '
+        'Nhiệm vụ: viết một bài thơ chúc Tết NGẮN, HAY, có VẦN và NHỊP tự nhiên; ngôn ngữ trong sáng, giàu hình ảnh, gợi không khí sum vầy, an khang. '
+        'Ưu tiên cách viết mộc mà sang, tránh sáo rỗng; hạn chế lặp từ; dùng phép gieo vần chân hoặc vần liền cho mượt. '
+        'Nếu người dùng cung cấp người nhận/từ khóa, hãy lồng vào khéo léo (không liệt kê). '
+        'Ràng buộc: chỉ trả về NỘI DUNG BÀI THƠ (4–8 dòng), không tiêu đề, không giải thích, không chào hỏi.'
+    ) 
 
     try:
         # Prefer Responses API; fallback to Chat Completions if needed
@@ -117,6 +153,7 @@ def api_generate_poem():
                         'content': [{'type': 'text', 'text': prompt}],
                     },
                 ],
+                temperature=0.9,
             )
             # New SDKs provide output_text
             poem_text = getattr(resp, 'output_text', None)
@@ -155,15 +192,31 @@ def api_generate_image():
     size = os.environ.get('OPENAI_IMAGE_SIZE', '1024x1024')
 
     try:
-        img = client.images.generate(
-            model=model,
-            prompt=prompt,
-            size=size,
-            response_format='b64_json',
-        )
-        b64 = img.data[0].b64_json
-        data_url = f'data:image/png;base64,{b64}'
-        return jsonify({'status': 'success', 'image': data_url, 'model': model, 'size': size})
+        # Note: Some OpenAI API variants reject `response_format`; omit it for compatibility.
+        img = client.images.generate(model=model, prompt=prompt, size=size)
+
+        item = (getattr(img, 'data', None) or [None])[0]
+        b64 = None
+        url = None
+
+        if item is not None:
+            b64 = getattr(item, 'b64_json', None)
+            url = getattr(item, 'url', None)
+
+            # In some SDK versions, `data[0]` may be a dict-like object
+            if not b64 and isinstance(item, dict):
+                b64 = item.get('b64_json')
+                url = item.get('url')
+
+        if b64:
+            data_url = f'data:image/png;base64,{b64}'
+            return jsonify({'status': 'success', 'image': data_url, 'model': model, 'size': size})
+
+        if url:
+            # Fallback: return a remote URL (still does not save to disk)
+            return jsonify({'status': 'success', 'image_url': url, 'model': model, 'size': size})
+
+        return jsonify({'status': 'error', 'error': 'OpenAI did not return image data'}), 502
     except Exception as e:
         return jsonify({'status': 'error', 'error': f'OpenAI image request failed: {e}'}), 500
 
