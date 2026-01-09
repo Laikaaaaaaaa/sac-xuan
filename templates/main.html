@@ -46,6 +46,23 @@
             overflow-x: hidden;
         }
 
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        img,
+        svg,
+        video,
+        canvas {
+            max-width: 100%;
+        }
+
+        canvas {
+            display: block;
+        }
+
         body::before {
             content: '';
             position: fixed;
@@ -152,6 +169,7 @@
             letter-spacing: 0.2px;
             font-size: 1.02rem;
             white-space: nowrap;
+            min-width: 0;
         }
 
         .brand-mark {
@@ -226,7 +244,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 160ms ease;
-            z-index: 240;
+            z-index: 180;
         }
 
         body.menu-open .menu-backdrop {
@@ -302,6 +320,10 @@
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             align-items: start;
+        }
+
+        .grid > * {
+            min-width: 0;
         }
 
         .card {
@@ -558,6 +580,22 @@
             background: rgba(212, 175, 55, 0.12);
         }
 
+        @media (max-width: 1024px) {
+            .watermark::before,
+            .watermark::after {
+                width: min(420px, 42vw);
+                height: min(420px, 42vw);
+            }
+
+            .watermark::before {
+                left: max(16px, 1.8vw);
+            }
+
+            .watermark::after {
+                right: max(16px, 1.8vw);
+            }
+        }
+
         @media (max-width: 920px) {
             .grid { grid-template-columns: 1fr; }
             .nav { display: none; }
@@ -597,6 +635,16 @@
         @media (max-width: 520px) {
             .actions { flex-direction: column; }
             .btn { width: 100%; justify-content: center; }
+
+            .topbar-inner {
+                min-width: 0;
+            }
+
+            .brand {
+                max-width: calc(100% - 56px);
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
             .watermark::before,
             .watermark::after {

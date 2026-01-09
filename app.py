@@ -5,6 +5,7 @@ Nền tảng AI kết nối di sản văn học Việt Nam
 
 from flask import Flask, render_template, jsonify, request
 import os
+import json
 
 # Load local .env if present (keeps secrets out of code)
 try:
@@ -80,6 +81,152 @@ def _get_openai_client():
         return None, f'OpenAI SDK not installed: {e}'
 
     return OpenAI(api_key=api_key), None
+
+
+def _get_gemini_api_key():
+    # Support common env var names
+    return (
+        os.environ.get('GEMINI_API_KEY')
+        or os.environ.get('GOOGLE_API_KEY')
+        or os.environ.get('GOOGLE_GEMINI_API_KEY')
+    )
+
+
+def _openai_size_to_aspect_ratio(size: str) -> str:
+    s = (size or '').strip().lower()
+    mapping = {
+        '1024x1024': '1:1',
+        '512x512': '1:1',
+        '256x256': '1:1',
+        '1024x768': '4:3',
+        '768x1024': '3:4',
+        '1024x576': '16:9',
+        '576x1024': '9:16',
+    }
+    return mapping.get(s, '1:1')
+
+
+def _generate_image_with_gemini(prompt: str):
+    api_key = _get_gemini_api_key()
+    if not api_key:
+        return None, 'Missing GEMINI_API_KEY (or GOOGLE_API_KEY) environment variable'
+
+    # Keep compatibility with existing OPENAI_IMAGE_SIZE env by mapping to aspect ratio.
+    openai_size = os.environ.get('OPENAI_IMAGE_SIZE', '1024x1024')
+    aspect_ratio = os.environ.get('GEMINI_IMAGE_ASPECT_RATIO', _openai_size_to_aspect_ratio(openai_size))
+
+    try:
+        import requests  # type: ignore
+    except Exception as e:
+        return None, f'Requests not installed: {e}'
+
+    # Imagen model via Google AI Studio / Gemini API.
+    # Google has changed/added Imagen model ids & method names over time.
+    # To reduce breakage, we try a small set of common model names + endpoints.
+    configured_model = (os.environ.get('GEMINI_IMAGE_MODEL') or '').strip()
+    if not configured_model:
+        configured_model = 'gemini-3-pro-image-preview'
+    model_candidates = [configured_model]
+    model_candidates = [m for m in model_candidates if m]
+
+    # Candidate endpoints (API version + RPC method name) after Gemini moved to generateContent.
+    def _payload():
+        return {
+            'prompt': {'text': prompt},
+            'modalities': ['image'],
+            'imageGenerationConfig': {
+                'numberOfImages': 1,
+                'aspectRatio': aspect_ratio,
+            },
+        }
+
+    endpoint_candidates = [
+        ('v1beta', 'generateContent'),
+        ('v1', 'generateContent'),
+    ]
+
+    last_error = None
+    data = None
+    chosen_model = None
+    chosen_url = None
+
+    for model in model_candidates:
+        for version, method in endpoint_candidates:
+            url = f'https://generativelanguage.googleapis.com/{version}/models/{model}:{method}?key={api_key}'
+            try:
+                r = requests.post(
+                    url,
+                    headers={'Content-Type': 'application/json'},
+                    data=json.dumps(_payload()),
+                    timeout=90,
+                )
+            except Exception as e:
+                last_error = f'Network error calling Gemini: {e}'
+                continue
+
+            # 404 is most commonly wrong endpoint/method/model; try next candidate.
+            if r.status_code == 404:
+                last_error = f'404 from {version} {model}:{method}'
+                continue
+
+            if r.status_code >= 400:
+                body = (r.text or '').strip()
+                # Keep error concise but actionable.
+                snippet = body[:500] if body else '(empty body)'
+                last_error = f'Gemini image request failed ({r.status_code}) via {version} {model}:{method} - {snippet}'
+                continue
+
+            chosen_model = model
+            chosen_url = url
+            data = r.json() if r.content else {}
+            break
+        if data is not None:
+            break
+
+    if data is None:
+        return None, last_error or 'Gemini image request failed (no response)'
+
+    # Most common shape for Imagen endpoint
+    images = data.get('generatedImages') or data.get('generated_images') or data.get('images') or []
+    if images and isinstance(images, list):
+        first = images[0]
+        if isinstance(first, dict):
+            b64 = (
+                first.get('bytesBase64Encoded')
+                or first.get('bytes_base64_encoded')
+                or first.get('b64')
+                or first.get('b64_json')
+            )
+            if b64:
+                return {
+                    'image': f'data:image/png;base64,{b64}',
+                    'model': model,
+                    'aspect_ratio': aspect_ratio,
+                    'provider': 'gemini',
+                }, None
+
+    # Fallback: some APIs may return candidates with inlineData
+    try:
+        candidates = data.get('candidates') or []
+        parts = (((candidates[0] or {}).get('content') or {}).get('parts') or []) if candidates else []
+        inline = (parts[0] or {}).get('inlineData') or (parts[0] or {}).get('inline_data') if parts else None
+        b64 = (inline or {}).get('data') if isinstance(inline, dict) else None
+        if b64:
+            return {
+                'image': f'data:image/png;base64,{b64}',
+                'model': model,
+                'aspect_ratio': aspect_ratio,
+                'provider': 'gemini',
+            }, None
+    except Exception:
+        pass
+
+    # If we got here, the endpoint returned 2xx but we couldn't find image bytes.
+    # Include a hint about which endpoint succeeded to ease debugging.
+    hint = ''
+    if chosen_model and chosen_url:
+        hint = f' (endpoint ok: {chosen_model})'
+    return None, 'Gemini did not return image data' + hint
 
 
 def _looks_off_topic(prompt: str) -> bool:
@@ -184,41 +331,10 @@ def api_generate_image():
     if not prompt:
         return jsonify({'status': 'error', 'error': 'Missing prompt'}), 400
 
-    client, err = _get_openai_client()
+    payload, err = _generate_image_with_gemini(prompt)
     if err:
         return jsonify({'status': 'error', 'error': err}), 500
-
-    model = os.environ.get('OPENAI_IMAGE_MODEL', 'gpt-image-1')
-    size = os.environ.get('OPENAI_IMAGE_SIZE', '1024x1024')
-
-    try:
-        # Note: Some OpenAI API variants reject `response_format`; omit it for compatibility.
-        img = client.images.generate(model=model, prompt=prompt, size=size)
-
-        item = (getattr(img, 'data', None) or [None])[0]
-        b64 = None
-        url = None
-
-        if item is not None:
-            b64 = getattr(item, 'b64_json', None)
-            url = getattr(item, 'url', None)
-
-            # In some SDK versions, `data[0]` may be a dict-like object
-            if not b64 and isinstance(item, dict):
-                b64 = item.get('b64_json')
-                url = item.get('url')
-
-        if b64:
-            data_url = f'data:image/png;base64,{b64}'
-            return jsonify({'status': 'success', 'image': data_url, 'model': model, 'size': size})
-
-        if url:
-            # Fallback: return a remote URL (still does not save to disk)
-            return jsonify({'status': 'success', 'image_url': url, 'model': model, 'size': size})
-
-        return jsonify({'status': 'error', 'error': 'OpenAI did not return image data'}), 502
-    except Exception as e:
-        return jsonify({'status': 'error', 'error': f'OpenAI image request failed: {e}'}), 500
+    return jsonify({'status': 'success', **(payload or {})})
 
 
 # =============================================
