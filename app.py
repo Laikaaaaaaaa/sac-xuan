@@ -9,6 +9,7 @@ import json
 import time
 import base64
 import re
+import uuid
 from pathlib import Path
 
 _DOTENV_PATH = Path(__file__).resolve().parent / '.env'
@@ -136,6 +137,7 @@ def _get_projects() -> list[dict]:
 def _add_project(kind: str, title: str, data: dict):
     # Flask's default session is cookie-based (~4KB). Keep projects small.
     proj = {
+        'id': uuid.uuid4().hex,
         'kind': kind,
         'title': _cap_text(title, 72) or 'Dự án',
         'data': data if isinstance(data, dict) else {},
@@ -161,6 +163,94 @@ def open_project(idx: int):
     if kind == 'music':
         return redirect('/music')
     return redirect('/main')
+
+
+def _save_data_url_image_to_static(data_url: str) -> str | None:
+    """Persist a data URL image into /static/generated and return its public URL."""
+    if not isinstance(data_url, str):
+        return None
+    if not data_url.startswith('data:image/'):
+        return None
+
+    # data:image/png;base64,AAAA...
+    m = re.match(r'^data:image/(?P<ext>[a-zA-Z0-9.+-]+);base64,(?P<b64>.+)$', data_url)
+    if not m:
+        return None
+
+    ext = (m.group('ext') or 'png').lower()
+    # Normalize a few common variants
+    if ext in {'jpeg', 'jpg'}:
+        ext = 'jpg'
+    elif ext in {'png'}:
+        ext = 'png'
+    elif ext in {'webp'}:
+        ext = 'webp'
+    else:
+        # Unknown/rare image types: store as png fallback name, but keep bytes.
+        ext = ext.replace('.', '_')[:10] or 'png'
+
+    b64 = m.group('b64') or ''
+    try:
+        raw = base64.b64decode(b64, validate=False)
+    except Exception:
+        try:
+            raw = base64.b64decode(b64)
+        except Exception:
+            return None
+
+    out_dir = Path(app.root_path) / 'static' / 'generated'
+    out_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"img_{int(time.time())}_{uuid.uuid4().hex[:12]}.{ext}"
+    out_path = out_dir / filename
+    try:
+        out_path.write_bytes(raw)
+    except Exception:
+        return None
+
+    return f"/static/generated/{filename}"
+
+
+def _delete_generated_static_file(image_url: str | None) -> None:
+    if not image_url or not isinstance(image_url, str):
+        return
+    if not image_url.startswith('/static/generated/'):
+        return
+    filename = image_url.split('/static/generated/', 1)[-1].strip('/\\')
+    if not filename or '..' in filename or '/' in filename or '\\' in filename:
+        return
+    path = Path(app.root_path) / 'static' / 'generated' / filename
+    try:
+        if path.exists() and path.is_file():
+            path.unlink()
+    except Exception:
+        return
+
+
+@app.route('/project/delete/<int:idx>', methods=['POST'])
+def delete_project(idx: int):
+    projects = _get_projects()
+    if idx < 0 or idx >= len(projects):
+        return jsonify({'status': 'error', 'error': 'Invalid project index'}), 400
+
+    removed = projects.pop(idx)
+    session['projects'] = projects
+
+    # If the active project equals the removed one, clear it.
+    active = session.get('active_project')
+    if isinstance(active, dict) and active == removed:
+        session.pop('active_project', None)
+
+    # Best-effort cleanup for persisted images.
+    try:
+        if isinstance(removed, dict) and (removed.get('kind') == 'image'):
+            data = removed.get('data') if isinstance(removed.get('data'), dict) else {}
+            image_url = data.get('image_url') if isinstance(data, dict) else None
+            _delete_generated_static_file(image_url)
+    except Exception:
+        pass
+
+    session.modified = True
+    return jsonify({'status': 'success'})
 
 
 @app.route('/api/suno-callback', methods=['POST'])
@@ -1789,13 +1879,27 @@ def api_generate_image():
     if err:
         return jsonify({'status': 'error', 'error': err}), 500
 
+    persisted_url = None
+    if isinstance(payload, dict):
+        img_field = payload.get('image')
+        if isinstance(img_field, str) and img_field.startswith('data:image/'):
+            persisted_url = _save_data_url_image_to_static(img_field)
+            if persisted_url:
+                payload['image_url'] = persisted_url
+        else:
+            url_field = payload.get('image_url')
+            if isinstance(url_field, str) and url_field:
+                persisted_url = url_field
+
     # Save a lightweight project (do NOT store base64 image data in cookie session)
     _add_project(
         'image',
         'Ảnh chúc Tết',
         {
             'prompt': _cap_text(prompt, 600),
-            'note': 'Mở lại sẽ khôi phục prompt (ảnh cần tạo lại).',
+            'image_url': _cap_text(persisted_url or '', 600),
+            'provider': _cap_text((payload or {}).get('provider') if isinstance(payload, dict) else '', 60),
+            'model': _cap_text((payload or {}).get('model') if isinstance(payload, dict) else '', 60),
         },
     )
     return jsonify({'status': 'success', **(payload or {})})

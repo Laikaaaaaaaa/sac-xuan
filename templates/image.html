@@ -1027,7 +1027,8 @@
                     hint.textContent = '';
                     setStatus('Đã tạo xong! Bạn có thể tải ảnh.', 'success');
                     armDismissSuccessOnUserEdit();
-                    btnDownload.href = dataUrl;
+                    const dlUrl = (json.image_url && typeof json.image_url === 'string') ? json.image_url : dataUrl;
+                    btnDownload.href = dlUrl;
                     setDownloading(true);
                 } catch (e) {
                     setStatus('Lỗi: ' + (e && e.message ? e.message : String(e)), 'error');
@@ -1085,8 +1086,20 @@
                 const data = ACTIVE_PROJECT.data || {};
                 if (data && typeof data.prompt === 'string' && promptEl) {
                     promptEl.value = data.prompt;
-                    setStatus('Đã mở dự án. Bấm “Tạo ảnh” để tạo lại.', 'success');
-                    armDismissSuccessOnUserEdit();
+                    // If we have a persisted image URL, show it immediately.
+                    const imageUrl = (data && typeof data.image_url === 'string') ? data.image_url : '';
+                    if (imageUrl) {
+                        img.src = imageUrl;
+                        preview.classList.add('has-image');
+                        hint.textContent = '';
+                        btnDownload.href = imageUrl;
+                        setDownloading(true);
+                        setStatus('Đã mở dự án. Đây là ảnh lần trước (bạn có thể tạo lại nếu muốn).', 'success');
+                        armDismissSuccessOnUserEdit();
+                    } else {
+                        setStatus('Đã mở dự án. Bấm “Tạo ảnh” để tạo lại.', 'success');
+                        armDismissSuccessOnUserEdit();
+                    }
                 }
             })();
 
