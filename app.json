@@ -1,0 +1,43 @@
+{
+  "name": "sac-xuan-ai",
+  "description": "Flask app: AI tạo thơ/ảnh/nhạc chúc Tết",
+  "keywords": ["flask", "openai", "stability", "suno", "kie"],
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "OpenAI API key",
+      "required": false
+    },
+    "STABILITY_API_KEY": {
+      "description": "Stability API key (for image generation)",
+      "required": false
+    },
+    "SUNO_API_KEY": {
+      "description": "Kie.ai Suno API key",
+      "required": false
+    },
+    "SUNO_BASE_URL": {
+      "description": "Base URL for Kie.ai, typically https://api.kie.ai",
+      "value": "https://api.kie.ai",
+      "required": false
+    },
+    "SUNO_GENERATE_PATH": {
+      "description": "Generate endpoint path",
+      "value": "/api/v1/generate",
+      "required": false
+    },
+    "SUNO_STATUS_PATH": {
+      "description": "Status polling path. Use {id} placeholder",
+      "value": "/api/v1/generate/record-info?taskId={id}",
+      "required": false
+    },
+    "SUNO_CALLBACK_URL": {
+      "description": "Public callback URL (must be reachable from Kie.ai). Example: https://<app>.herokuapp.com/api/suno-callback",
+      "required": false
+    },
+    "SUNO_MODEL": {
+      "description": "Kie.ai model",
+      "value": "V4_5PLUS",
+      "required": false
+    }
+  }
+}
