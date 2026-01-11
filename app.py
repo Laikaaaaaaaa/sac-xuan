@@ -1319,13 +1319,19 @@ def api_generate_poem():
     if err:
         return jsonify({'status': 'error', 'error': err}), 500
 
-    model = os.environ.get('OPENAI_TEXT_MODEL', 'gpt-4o-mini')
+    model = (
+        os.environ.get('OPENAI_POEM_MODEL')
+        or os.environ.get('OPENAI_TEXT_MODEL')
+        or 'gpt-4.1-mini'
+    )
 
     style_instructions = {
         'tu_do': (
-            'Thể thơ: THƠ TỰ DO. Viết 6–10 dòng, câu ngắn vừa phải; có nhịp tự nhiên. '
-            'Bắt buộc có VẦN CHÂN rõ ràng: chọn 1 tiếng/vần kết (ví dụ: “ơi”, “a”, “ang”) và kết thúc đúng bằng tiếng đó ở cuối ít nhất 4 dòng (không nhất thiết mọi dòng). '
-            'Không đặt dấu câu sau tiếng gieo vần.'
+            'Thể thơ: THƠ TỰ DO (truyền thống, dễ đọc). Nếu prompt nói “ngắn” thì ưu tiên 4 dòng; nếu không thì 4–8 dòng. '
+            'Câu gọn (ưu tiên 6–10 tiếng mỗi dòng) để nhịp đều. '
+            'Bắt buộc có VẦN CHÂN rõ ràng: chọn 1 VẦN chủ đạo (ví dụ: “-ang”, “-ơi”, “-a”) và gieo vần chân XUYÊN SUỐT bài (phần lớn các dòng; nếu 4 dòng thì tối thiểu 3 dòng cùng vần). '
+            'Không đặt dấu câu sau tiếng gieo vần. '
+            'Tránh kết thúc nhiều dòng bằng cùng một TỪ y hệt (có thể đổi từ nhưng giữ cùng vần) để thơ “đã tai” mà không lặp.'
         ),
         'luc_bat': (
             'Thể thơ: LỤC BÁT. Viết 4–8 dòng (số dòng CHẴN) theo cặp 6/8 (luân phiên). '
@@ -1473,7 +1479,7 @@ def api_generate_poem():
 
             common = [
                 'oang', 'uang', 'uynh', 'uyen', 'uong', 'ieng',
-                'ang', 'anh', 'ach', 'ap', 'at',
+                'ang', 'anh', 'an', 'am', 'ach', 'ap', 'at',
                 'ong', 'oc', 'op', 'ot',
                 'ung', 'uc', 'up', 'ut',
                 'inh', 'ich', 'ip', 'it',
@@ -1493,6 +1499,34 @@ def api_generate_poem():
             """Return (ok, reason, meta). Meta may include rhyme_key."""
             lines = _split_lines(text)
             meta: dict = {'lines': lines}
+
+            if style_key == 'tu_do':
+                if len(lines) < 4 or len(lines) > 10:
+                    return False, 'expected 4-10 lines for tu_do', meta
+
+                # Rhythm guardrail: keep most lines within a reasonable syllable range.
+                syllables = [_count_syllables_by_space(ln) for ln in lines]
+                meta['syllables'] = syllables
+                out_of_range = sum(1 for s in syllables if s < 5 or s > 12)
+                if out_of_range >= max(2, len(lines) // 2):
+                    return False, 'tu_do rhythm out of range', meta
+
+                keys = [_rhyme_key_from_token(_last_token_normalized(ln)) for ln in lines]
+                keys = [k for k in keys if k]
+                if not keys:
+                    return False, 'empty rhyme token', meta
+
+                from collections import Counter
+                c = Counter(keys)
+                best_key, best_count = c.most_common(1)[0]
+                meta['rhyme_key'] = best_key
+
+                # Require consistent end-rhyme for most lines.
+                need = max(3, int((len(lines) * 0.7) + 0.999))  # ceil(0.7 * n)
+                if best_count < need:
+                    return False, 'insufficient end-rhyme consistency', meta
+
+                return True, '', meta
 
             if style_key == 'cau_doi':
                 if len(lines) != 2:
@@ -1565,8 +1599,9 @@ def api_generate_poem():
 
         poem_text = (poem_text or '').strip()
 
-        # Auto-repair once for strict forms to better guarantee meter/rhyme.
+        # Auto-repair for styles that need strong structure/rhyme guarantees.
         if poem_text and poem_style in {
+            'tu_do',
             'luc_bat',
             'song_that_luc_bat',
             'that_ngon_tu_tuyet',
@@ -1578,6 +1613,7 @@ def api_generate_poem():
                 rhyme_key = meta.get('rhyme_key')
 
                 meter_check = {
+                    'tu_do': 'KIỂM TRA THỂ: 4–8 dòng (ưu tiên 4–6 nếu prompt nói “ngắn”); mỗi dòng gọn, khoảng 6–10 tiếng để nhịp đều; gieo vần chân rõ ở phần lớn dòng.',
                     'luc_bat': 'KIỂM TRA THỂ: 4/6/8 dòng (số dòng chẵn); dòng 1/3/5/7 = 6 tiếng, dòng 2/4/6/8 = 8 tiếng (đếm theo các cụm tách bằng dấu cách).',
                     'song_that_luc_bat': 'KIỂM TRA THỂ: đúng 4 dòng, số tiếng lần lượt 7 / 7 / 6 / 8 (đếm theo các cụm tách bằng dấu cách).',
                     'that_ngon_tu_tuyet': 'KIỂM TRA THỂ: đúng 4 dòng, mỗi dòng đúng 7 tiếng (đếm theo các cụm tách bằng dấu cách).',
@@ -1589,16 +1625,29 @@ def api_generate_poem():
                     'Bạn là biên tập viên thơ tiếng Việt. Hãy CHỈNH SỬA bài thơ bên dưới để tuân thủ đúng thể thơ và vần điệu. '
                     'Giữ ý nghĩa chúc Tết theo prompt người dùng, viết mượt, tự nhiên. '
                     'Nếu bài hiện tại sai thể (sai số tiếng/số dòng/vần), hãy VIẾT LẠI MỚI hoàn toàn theo đúng thể thơ thay vì sửa chắp vá. '
+                    'Chống lỗi thường gặp: vỡ vần (mỗi dòng một vần), câu văn xuôi dài, lặp cụm từ (ví dụ “khắp nơi/muôn nơi”). '
                     'Ràng buộc: chỉ xuất ra bài thơ cuối cùng, mỗi câu một dòng, không tiêu đề, không giải thích.'
                 )
 
                 try:
-                    for attempt in range(3):
+                    for attempt in range(4):
                         extra_strict = (
                             'LƯU Ý: Bắt buộc đúng số tiếng từng dòng. Nếu dòng thiếu/dư tiếng, hãy thêm/bớt từ để đúng. '
                             'Tránh dấu câu rườm rà; ưu tiên câu chữ rõ ràng. '
                             'Giữ khoảng trắng chuẩn giữa các tiếng (mỗi tiếng cách nhau 1 dấu cách).'
                             if attempt == 1
+                            else ''
+                        )
+
+                        tu_do_rhyme = (
+                            (
+                                f"THƠ TỰ DO: ưu tiên 4–6 dòng để nhịp gọn. "
+                                f"Chọn 1 vần chủ đạo (đuôi như '{rhyme_key}' nếu đã có) và gieo vần chân xuyên suốt: "
+                                f"ít nhất 3/4 dòng cùng vần (nếu 4 dòng) hoặc >=70% dòng cùng vần (nếu nhiều hơn). "
+                                f"Tránh mỗi dòng một vần. Có thể đổi TỪ cuối nhưng phải giữ cùng VẦN (ví dụ '{rhyme_key}': vàng/rạng/sang/khang...). "
+                                f"Không để 2 dòng liên tiếp kết thúc bằng đúng cùng một từ."
+                            )
+                            if poem_style == 'tu_do'
                             else ''
                         )
 
@@ -1618,6 +1667,7 @@ def api_generate_poem():
                             f'THỂ THƠ BẮT BUỘC: {allowed_styles.get(poem_style, poem_style)}\n'
                             + (meter_check + '\n' if meter_check else '')
                             + (luc_bat_template + '\n' if luc_bat_template else '')
+                            + (tu_do_rhyme + '\n' if tu_do_rhyme else '')
                             + (f"VẦN CHÂN BẮT BUỘC: các dòng gieo vần phải cùng VẦN (cùng đuôi vần như '{rhyme_key}'), gieo vần chân rõ ràng.\n" if rhyme_key else '')
                             + (extra_strict + '\n' if extra_strict else '')
                             + f'BÀI THƠ CẦN SỬA:\n{poem_text}'
@@ -1629,7 +1679,7 @@ def api_generate_poem():
                                 {'role': 'system', 'content': repair_system},
                                 {'role': 'user', 'content': repair_user},
                             ],
-                            temperature=0.2,
+                            temperature=0.1,
                         )
                         repaired = (chat2.choices[0].message.content or '').strip()
                         if repaired:
@@ -1639,6 +1689,57 @@ def api_generate_poem():
                                 break
                 except Exception:
                     pass
+
+                # Final fallback for tu_do: force a short 4-line poem with a single dominant rhyme.
+                if poem_style == 'tu_do':
+                    ok_final, _, meta_final = _validate_fixed_form(poem_text, poem_style)
+                    if not ok_final:
+                        rk = (rhyme_key or meta_final.get('rhyme_key') or '').strip()
+                        suggestions_map = {
+                            'ang': ['vàng', 'sang', 'khang', 'rạng', 'trang', 'an khang'],
+                            'an': ['an', 'bình an', 'vẹn toàn', 'an nhàn'],
+                            'am': ['ấm', 'đằm', 'thắm'],
+                            'ien': ['hiên', 'yên', 'duyên', 'thiên', 'tiên', 'miên'],
+                            'ong': ['thông', 'trong', 'hồng', 'đông'],
+                            'ay': ['ngày', 'đầy', 'say', 'bay'],
+                            'a': ['hoa', 'nhà', 'xa', 'ta'],
+                            'oi': ['vui', 'thôi', 'mới', 'tươi'],
+                            'em': ['êm', 'thêm', 'mềm'],
+                            'en': ['bền', 'quen', 'khen'],
+                        }
+                        suggested = suggestions_map.get(rk, [])
+                        suggested_str = ', '.join(suggested) if suggested else ''
+
+                        force_system = (
+                            'Bạn là thi sĩ Việt Nam. Hãy VIẾT MỚI một bài thơ Tết THƠ TỰ DO thật gọn và đã tai. '
+                            'Bắt buộc: đúng 4 dòng; mỗi dòng 6–10 tiếng; gieo vần chân rõ; không dấu câu ở cuối dòng; tránh lặp cụm từ. '
+                            'Chỉ trả về bài thơ, mỗi câu một dòng.'
+                        )
+                        force_user = (
+                            f'PROMPT: {prompt}\n'
+                            + (f"VẦN CHỦ ĐẠO: dùng vần '-{rk}' cho cả 4 dòng. " if rk else '')
+                            + (f"GỢI Ý TỪ KẾT VẦN (không bắt buộc, tránh lặp từ): {suggested_str}. " if suggested_str else '')
+                            + 'Hãy để 4 dòng kết thúc bằng 4 từ khác nhau nhưng cùng vần.'
+                        )
+
+                        try:
+                            for _ in range(2):
+                                chat3 = client.chat.completions.create(
+                                    model=model,
+                                    messages=[
+                                        {'role': 'system', 'content': force_system},
+                                        {'role': 'user', 'content': force_user},
+                                    ],
+                                    temperature=0.6,
+                                )
+                                candidate = (chat3.choices[0].message.content or '').strip()
+                                if candidate:
+                                    ok3, _, _ = _validate_fixed_form(candidate, poem_style)
+                                    if ok3:
+                                        poem_text = candidate
+                                        break
+                        except Exception:
+                            pass
         if poem_text:
             title = poem_text.splitlines()[0].strip() if poem_text.splitlines() else ''
             if not title:

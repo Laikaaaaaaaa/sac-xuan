@@ -1397,6 +1397,29 @@
                 padding-left: 12px;
                 padding-right: 12px;
             }
+
+            /* Modal: prevent overflow on mobile */
+            .modal {
+                padding: 12px;
+                align-items: center;
+                overflow-y: auto;
+            }
+
+            .modal-card {
+                width: 100%;
+                max-width: 560px;
+                max-height: calc(100vh - 24px);
+                overflow: auto;
+                padding: 14px;
+            }
+
+            .modal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-option {
+                padding: 12px;
+            }
         }
 
         /* Mobile (very small) */
@@ -1421,6 +1444,18 @@
                 max-width: calc(100% - 56px);
                 overflow: hidden;
                 text-overflow: ellipsis;
+            }
+
+            .modal-close {
+                width: 40px;
+                height: 40px;
+            }
+
+            .modal-option-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                font-size: 1.05rem;
             }
         }
 
