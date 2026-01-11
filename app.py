@@ -1328,10 +1328,12 @@ def api_generate_poem():
             'Không đặt dấu câu sau tiếng gieo vần.'
         ),
         'luc_bat': (
-            'Thể thơ: LỤC BÁT. Viết 6–8 dòng theo cặp 6/8 (luân phiên). '
+            'Thể thơ: LỤC BÁT. Viết 4–8 dòng (số dòng CHẴN) theo cặp 6/8 (luân phiên). '
             'Bắt buộc giữ đúng số tiếng mỗi dòng (đếm theo các cụm tách bằng dấu cách): 6 tiếng, rồi 8 tiếng. '
+            'Quy tắc trình bày: mỗi tiếng cách nhau đúng 1 dấu cách; không dính chữ, không viết tắt. '
             'Gieo vần theo lục bát: tiếng thứ 6 của câu 6 vần với tiếng thứ 6 của câu 8; '
             'tiếng cuối câu 8 vần với tiếng thứ 6 câu 6 tiếp theo. '
+            'Ưu tiên chọn 1 vần chủ đạo cho TIẾNG CUỐI các câu 8 (câu 2,4,6,8) để bài “đã tai”, tránh đổi vần liên tục. '
             'Trước khi trả lời, hãy tự đếm số tiếng từng câu và sửa cho đúng; không hiển thị phần kiểm tra.'
         ),
         'song_that_luc_bat': (
@@ -1507,8 +1509,11 @@ def api_generate_poem():
                 return True, '', meta
 
             if style_key == 'luc_bat':
-                if len(lines) not in (6, 8):
-                    return False, 'expected 6 or 8 lines for luc_bat', meta
+                # Common lục bát can be 2 couplets (4 lines) or longer.
+                if len(lines) not in (4, 6, 8):
+                    return False, 'expected 4, 6, or 8 lines for luc_bat', meta
+                if (len(lines) % 2) != 0:
+                    return False, 'expected even number of lines for luc_bat', meta
                 for i, ln in enumerate(lines):
                     need = 6 if (i % 2 == 0) else 8
                     if _count_syllables_by_space(ln) != need:
@@ -1573,7 +1578,7 @@ def api_generate_poem():
                 rhyme_key = meta.get('rhyme_key')
 
                 meter_check = {
-                    'luc_bat': 'KIỂM TRA THỂ: 6 hoặc 8 dòng; dòng 1/3/5/7 = 6 tiếng, dòng 2/4/6/8 = 8 tiếng (đếm theo các cụm tách bằng dấu cách).',
+                    'luc_bat': 'KIỂM TRA THỂ: 4/6/8 dòng (số dòng chẵn); dòng 1/3/5/7 = 6 tiếng, dòng 2/4/6/8 = 8 tiếng (đếm theo các cụm tách bằng dấu cách).',
                     'song_that_luc_bat': 'KIỂM TRA THỂ: đúng 4 dòng, số tiếng lần lượt 7 / 7 / 6 / 8 (đếm theo các cụm tách bằng dấu cách).',
                     'that_ngon_tu_tuyet': 'KIỂM TRA THỂ: đúng 4 dòng, mỗi dòng đúng 7 tiếng (đếm theo các cụm tách bằng dấu cách).',
                     'that_ngon_bat_cu': 'KIỂM TRA THỂ: đúng 8 dòng, mỗi dòng đúng 7 tiếng (đếm theo các cụm tách bằng dấu cách).',
@@ -1583,15 +1588,28 @@ def api_generate_poem():
                 repair_system = (
                     'Bạn là biên tập viên thơ tiếng Việt. Hãy CHỈNH SỬA bài thơ bên dưới để tuân thủ đúng thể thơ và vần điệu. '
                     'Giữ ý nghĩa chúc Tết theo prompt người dùng, viết mượt, tự nhiên. '
+                    'Nếu bài hiện tại sai thể (sai số tiếng/số dòng/vần), hãy VIẾT LẠI MỚI hoàn toàn theo đúng thể thơ thay vì sửa chắp vá. '
                     'Ràng buộc: chỉ xuất ra bài thơ cuối cùng, mỗi câu một dòng, không tiêu đề, không giải thích.'
                 )
 
                 try:
-                    for attempt in range(2):
+                    for attempt in range(3):
                         extra_strict = (
                             'LƯU Ý: Bắt buộc đúng số tiếng từng dòng. Nếu dòng thiếu/dư tiếng, hãy thêm/bớt từ để đúng. '
-                            'Tránh dấu câu rườm rà; ưu tiên câu chữ rõ ràng.'
+                            'Tránh dấu câu rườm rà; ưu tiên câu chữ rõ ràng. '
+                            'Giữ khoảng trắng chuẩn giữa các tiếng (mỗi tiếng cách nhau 1 dấu cách).'
                             if attempt == 1
+                            else ''
+                        )
+
+                        luc_bat_template = (
+                            'MẪU LỤC BÁT (4 dòng):\n'
+                            '(6 tiếng)\n'
+                            '(8 tiếng)\n'
+                            '(6 tiếng)\n'
+                            '(8 tiếng)\n'
+                            'Bạn có thể viết 6 hoặc 8 dòng nhưng phải luân phiên 6/8.'
+                            if poem_style == 'luc_bat'
                             else ''
                         )
 
@@ -1599,6 +1617,7 @@ def api_generate_poem():
                             f'PROMPT GỐC (để giữ ý):\n{prompt}\n\n'
                             f'THỂ THƠ BẮT BUỘC: {allowed_styles.get(poem_style, poem_style)}\n'
                             + (meter_check + '\n' if meter_check else '')
+                            + (luc_bat_template + '\n' if luc_bat_template else '')
                             + (f"VẦN CHÂN BẮT BUỘC: các dòng gieo vần phải cùng VẦN (cùng đuôi vần như '{rhyme_key}'), gieo vần chân rõ ràng.\n" if rhyme_key else '')
                             + (extra_strict + '\n' if extra_strict else '')
                             + f'BÀI THƠ CẦN SỬA:\n{poem_text}'
