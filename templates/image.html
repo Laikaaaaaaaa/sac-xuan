@@ -457,6 +457,61 @@
             font-weight: 850;
         }
 
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(45, 24, 16, 0.22);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-card {
+            width: min(520px, 92vw);
+            border-radius: 18px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(254, 254, 250, 0.92);
+            box-shadow: 0 18px 60px rgba(45, 24, 16, 0.14);
+            padding: 16px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 4px solid rgba(212, 175, 55, 0.28);
+            border-top-color: rgba(139, 0, 0, 0.72);
+            animation: spin 0.9s linear infinite;
+            flex: 0 0 auto;
+        }
+
+        .loading-title {
+            margin: 0;
+            font-weight: 900;
+            color: var(--red-deep);
+            letter-spacing: 0.2px;
+        }
+
+        .loading-sub {
+            margin: 4px 0 0;
+            opacity: 0.82;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .out-head {
             display: flex;
             align-items: center;
@@ -698,6 +753,15 @@
     <div class="bg-pattern" aria-hidden="true"></div>
     <div class="watermark" aria-hidden="true"></div>
     <div class="menu-backdrop" id="menuBackdrop" aria-hidden="true"></div>
+    <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+        <div class="loading-card" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div>
+                <p class="loading-title" id="loadingTitle">Đang xử lý…</p>
+                <p class="loading-sub" id="loadingSub">Vui lòng đợi một chút.</p>
+            </div>
+        </div>
+    </div>
 
     <header class="topbar">
         <div class="container">
@@ -808,6 +872,8 @@
         </div>
     </footer>
 
+    <script id="activeProjectJson" type="application/json">{{ active_project|tojson }}</script>
+
     <script>
         (function () {
             const yearEl = document.getElementById('year');
@@ -859,6 +925,31 @@
             const hint = document.getElementById('hint');
             const btnDownload = document.getElementById('btnDownload');
 
+            const overlayEl = document.getElementById('loadingOverlay');
+            const overlayTitleEl = document.getElementById('loadingTitle');
+            const overlaySubEl = document.getElementById('loadingSub');
+
+            function setLoading(isLoading, titleText, subText) {
+                if (!overlayEl) return;
+                overlayEl.classList.toggle('show', Boolean(isLoading));
+                overlayEl.setAttribute('aria-hidden', isLoading ? 'false' : 'true');
+                if (overlayTitleEl) overlayTitleEl.textContent = titleText || 'Đang xử lý…';
+                if (overlaySubEl) overlaySubEl.textContent = subText || 'Vui lòng đợi một chút.';
+
+                try {
+                    const disabled = Boolean(isLoading);
+                    if (btnGenerate) btnGenerate.disabled = disabled;
+                    if (btnClear) btnClear.disabled = disabled;
+                    if (btnCopyPrompt) btnCopyPrompt.disabled = disabled;
+                } catch {}
+            }
+
+            function getActiveProject() {
+                const el = document.getElementById('activeProjectJson');
+                if (!el) return null;
+                try { return JSON.parse(el.textContent || 'null'); } catch { return null; }
+            }
+
             function setStatus(text, kind) {
                 statusEl.textContent = text || '';
                 statusEl.classList.remove('show', 'error', 'success');
@@ -907,34 +998,43 @@
                 hint.textContent = 'Đang tạo ảnh…';
                 setDownloading(false);
 
-                const res = await fetch('/api/generate-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt })
-                });
+                setLoading(true, 'Đang tạo ảnh…', 'Có thể mất vài giây tuỳ độ phức tạp prompt.');
 
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok || !json || json.status !== 'success') {
-                    const msg = (json && (json.error || json.message)) || 'Không thể tạo ảnh. Kiểm tra server log / GEMINI_API_KEY.';
-                    setStatus(msg, 'error');
+                try {
+                    const res = await fetch('/api/generate-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt })
+                    });
+
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json || json.status !== 'success') {
+                        const msg = (json && (json.error || json.message)) || 'Không thể tạo ảnh. Kiểm tra server log / GEMINI_API_KEY.';
+                        setStatus(msg, 'error');
+                        hint.textContent = 'Có lỗi khi tạo ảnh.';
+                        return;
+                    }
+
+                    const dataUrl = (json.image || json.image_url);
+                    if (!dataUrl || typeof dataUrl !== 'string') {
+                        setStatus('Server trả về dữ liệu ảnh không hợp lệ.', 'error');
+                        hint.textContent = 'Có lỗi khi tạo ảnh.';
+                        return;
+                    }
+
+                    img.src = dataUrl;
+                    preview.classList.add('has-image');
+                    hint.textContent = '';
+                    setStatus('Đã tạo xong! Bạn có thể tải ảnh.', 'success');
+                    armDismissSuccessOnUserEdit();
+                    btnDownload.href = dataUrl;
+                    setDownloading(true);
+                } catch (e) {
+                    setStatus('Lỗi: ' + (e && e.message ? e.message : String(e)), 'error');
                     hint.textContent = 'Có lỗi khi tạo ảnh.';
-                    return;
+                } finally {
+                    setLoading(false);
                 }
-
-                const dataUrl = (json.image || json.image_url);
-                if (!dataUrl || typeof dataUrl !== 'string') {
-                    setStatus('Server trả về dữ liệu ảnh không hợp lệ.', 'error');
-                    hint.textContent = 'Có lỗi khi tạo ảnh.';
-                    return;
-                }
-
-                img.src = dataUrl;
-                preview.classList.add('has-image');
-                hint.textContent = '';
-                setStatus('Đã tạo xong! Bạn có thể tải ảnh.', 'success');
-                armDismissSuccessOnUserEdit();
-                btnDownload.href = dataUrl;
-                setDownloading(true);
             }
 
             btnGenerate.addEventListener('click', () => { generate(); });
@@ -977,6 +1077,18 @@
                     promptEl.focus();
                 });
             });
+
+            // Prefill from session project (if any)
+            (function applyActiveProject() {
+                const ACTIVE_PROJECT = getActiveProject();
+                if (!ACTIVE_PROJECT || typeof ACTIVE_PROJECT !== 'object') return;
+                const data = ACTIVE_PROJECT.data || {};
+                if (data && typeof data.prompt === 'string' && promptEl) {
+                    promptEl.value = data.prompt;
+                    setStatus('Đã mở dự án. Bấm “Tạo ảnh” để tạo lại.', 'success');
+                    armDismissSuccessOnUserEdit();
+                }
+            })();
 
             // Scroll reveal
             const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

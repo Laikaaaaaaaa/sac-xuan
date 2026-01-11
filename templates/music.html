@@ -461,6 +461,61 @@
             font-weight: 850;
         }
 
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(45, 24, 16, 0.22);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-card {
+            width: min(560px, 92vw);
+            border-radius: 18px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(254, 254, 250, 0.92);
+            box-shadow: 0 18px 60px rgba(45, 24, 16, 0.14);
+            padding: 16px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 4px solid rgba(212, 175, 55, 0.28);
+            border-top-color: rgba(139, 0, 0, 0.72);
+            animation: spin 0.9s linear infinite;
+            flex: 0 0 auto;
+        }
+
+        .loading-title {
+            margin: 0;
+            font-weight: 900;
+            color: var(--red-deep);
+            letter-spacing: 0.2px;
+        }
+
+        .loading-sub {
+            margin: 4px 0 0;
+            opacity: 0.82;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .lyrics-counter {
             margin-top: 6px;
             margin-bottom: 4px;
@@ -687,6 +742,15 @@
 <body>
     <div class="watermark" aria-hidden="true"></div>
     <div class="menu-backdrop" id="menuBackdrop" aria-hidden="true"></div>
+    <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+        <div class="loading-card" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div>
+                <p class="loading-title" id="loadingTitle">Đang xử lý…</p>
+                <p class="loading-sub" id="loadingSub">Vui lòng đợi một chút.</p>
+            </div>
+        </div>
+    </div>
 
     <div class="page-wrapper">
         <header class="topbar">
@@ -722,7 +786,7 @@
             <section class="hero reveal" style="--d: 0ms;">
                 <div class="container content">
                     <div class="kicker"><i class="fa-solid fa-music" aria-hidden="true"></i>AI tạo audio chúc Tết</div>
-                    <h1 class="h1">Tạo “jingle/chant” ngắn để gửi lời chúc</h1>
+                    <h1 class="h1">Hát lên điều bạn viết</h1>
                     <p class="lead">Nhập <b>lời bài hát</b> (hoặc lời chúc dạng rap/chant). Chọn thể loại. Hệ thống sẽ tạo nhạc có vocal và xuất MP3 để bạn nghe thử và tải xuống.</p>
                     <div class="divider" aria-hidden="true"></div>
                 </div>
@@ -836,6 +900,8 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
         </footer>
     </div>
 
+    <script id="activeProjectJson" type="application/json">{{ active_project|tojson }}</script>
+
     <script>
         (function () {
             const yearEl = document.getElementById('year');
@@ -918,6 +984,36 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
             const remakeOptionsEl = document.getElementById('remakeOptions');
             const remakeLengthEl = document.getElementById('remakeLength');
             const remakeNoteEl = document.getElementById('remakeNote');
+
+            const overlayEl = document.getElementById('loadingOverlay');
+            const overlayTitleEl = document.getElementById('loadingTitle');
+            const overlaySubEl = document.getElementById('loadingSub');
+
+            function setLoading(isLoading, titleText, subText) {
+                if (!overlayEl) return;
+                overlayEl.classList.toggle('show', Boolean(isLoading));
+                overlayEl.setAttribute('aria-hidden', isLoading ? 'false' : 'true');
+                if (overlayTitleEl) overlayTitleEl.textContent = titleText || 'Đang xử lý…';
+                if (overlaySubEl) overlaySubEl.textContent = subText || 'Vui lòng đợi một chút.';
+
+                try {
+                    const disabled = Boolean(isLoading);
+                    if (btnRestore) btnRestore.disabled = disabled;
+                    if (btnClear) btnClear.disabled = disabled;
+                    if (remakeLyricsEl) remakeLyricsEl.disabled = disabled;
+                    if (remakeLengthEl) remakeLengthEl.disabled = disabled;
+                    if (remakeNoteEl) remakeNoteEl.disabled = disabled;
+                    if (titleEl) titleEl.disabled = disabled;
+                    if (styleEl) styleEl.disabled = disabled;
+                    if (promptEl) promptEl.disabled = disabled;
+                } catch {}
+            }
+
+            function getActiveProject() {
+                const el = document.getElementById('activeProjectJson');
+                if (!el) return null;
+                try { return JSON.parse(el.textContent || 'null'); } catch { return null; }
+            }
 
             const STORAGE_KEY = 'sacxuanai_music_last_v4';
 
@@ -1066,6 +1162,52 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
             }
             syncRemakeOptionsVisibility();
 
+            // Prefill from session project (if any)
+            (function applyActiveProject() {
+                const ACTIVE_PROJECT = getActiveProject();
+                if (!ACTIVE_PROJECT || typeof ACTIVE_PROJECT !== 'object') return;
+                const data = ACTIVE_PROJECT.data || {};
+
+                if (titleEl && data && typeof data.title === 'string') {
+                    titleEl.value = data.title;
+                }
+                if (styleEl && data && typeof data.style === 'string' && data.style) {
+                    styleEl.value = data.style;
+                }
+                if (promptEl && data && typeof data.prompt === 'string') {
+                    promptEl.value = data.prompt;
+                }
+                if (remakeLyricsEl && data && typeof data.remake_lyrics !== 'undefined') {
+                    remakeLyricsEl.checked = Boolean(data.remake_lyrics);
+                }
+                if (remakeLengthEl && data && typeof data.remake_length === 'string' && data.remake_length) {
+                    remakeLengthEl.value = data.remake_length;
+                }
+                if (remakeNoteEl && data && typeof data.remake_note === 'string') {
+                    remakeNoteEl.value = data.remake_note;
+                }
+                syncRemakeOptionsVisibility();
+                updateLyricsCount();
+
+                const audioUrl = (data && typeof data.audio_url === 'string') ? data.audio_url : '';
+                const lyrics = (data && typeof data.lyrics === 'string') ? data.lyrics : '';
+
+                if (lyrics && lyricsEl) {
+                    lyricsEl.textContent = lyrics;
+                }
+
+                if (audioUrl && player) {
+                    player.src = audioUrl;
+                    try { player.load(); } catch {}
+                    setDownloadEnabled(true, audioUrl);
+                    setStatus('Đã mở dự án. Bạn có thể nghe lại hoặc tạo lại.', 'success');
+                    armDismissSuccessOnUserEdit();
+                } else if (data && (data.prompt || data.title || data.style)) {
+                    setStatus('Đã mở dự án. Bấm “Tạo nhạc” để tạo lại.', 'success');
+                    armDismissSuccessOnUserEdit();
+                }
+            })();
+
             btnRestore.addEventListener('click', () => {
                 const saved = loadFromLocal();
                 if (!saved) {
@@ -1145,6 +1287,7 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
                 setDownloadEnabled(false);
                 setStatus('Đang tạo nhạc…', 'info');
                 lyricsEl.textContent = 'Đang xử lý…';
+                setLoading(true, 'Đang tạo nhạc…', 'Thường mất 1–3 phút tuỳ server.');
 
                 try {
                     const res = await fetch('/api/generate-music', {
@@ -1193,6 +1336,7 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
                 } catch (e) {
                     setStatus('Lỗi: ' + (e && e.message ? e.message : String(e)), 'error');
                 } finally {
+                    setLoading(false);
                     btnGenerate.disabled = false;
                 }
             }

@@ -3,7 +3,7 @@ SẮC XUÂN VĂN HỌC - Flask Application
 Nền tảng AI kết nối di sản văn học Việt Nam
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session, redirect
 import os
 import json
 import time
@@ -83,28 +83,84 @@ def _dev_reload_env():
 @app.route('/')
 def home():
     """Trang chủ - Landing cho AI tạo thơ chúc Tết"""
-    return render_template('home.html')
+    projects = session.get('projects')
+    if not isinstance(projects, list):
+        projects = []
+    return render_template('home.html', projects=projects)
 
 
 @app.route('/main')
 @app.route('/main/')
 def main():
     """Trang tạo thơ chúc Tết"""
-    return render_template('main.html')
+    active = session.get('active_project')
+    if isinstance(active, dict) and active.get('kind') == 'poem':
+        return render_template('main.html', active_project=active)
+    return render_template('main.html', active_project=None)
 
 
 @app.route('/image')
 @app.route('/image/')
 def image():
     """Trang tạo ảnh chúc Tết từ prompt"""
-    return render_template('image.html')
+    active = session.get('active_project')
+    if isinstance(active, dict) and active.get('kind') == 'image':
+        return render_template('image.html', active_project=active)
+    return render_template('image.html', active_project=None)
 
 
 @app.route('/music')
 @app.route('/music/')
 def music():
     """Trang tạo nhạc/audio chúc Tết từ prompt"""
-    return render_template('music.html')
+    active = session.get('active_project')
+    if isinstance(active, dict) and active.get('kind') == 'music':
+        return render_template('music.html', active_project=active)
+    return render_template('music.html', active_project=None)
+
+
+def _cap_text(value: str | None, max_len: int) -> str:
+    s = (value or '').strip()
+    if len(s) <= max_len:
+        return s
+    return s[: max(0, max_len - 1)].rstrip() + '…'
+
+
+def _get_projects() -> list[dict]:
+    projects = session.get('projects')
+    if not isinstance(projects, list):
+        return []
+    return [p for p in projects if isinstance(p, dict)]
+
+
+def _add_project(kind: str, title: str, data: dict):
+    # Flask's default session is cookie-based (~4KB). Keep projects small.
+    proj = {
+        'kind': kind,
+        'title': _cap_text(title, 72) or 'Dự án',
+        'data': data if isinstance(data, dict) else {},
+        'ts': int(time.time()),
+    }
+    projects = _get_projects()
+    projects.insert(0, proj)
+    session['projects'] = projects[:8]
+    session.modified = True
+
+
+@app.route('/project/open/<int:idx>')
+def open_project(idx: int):
+    projects = _get_projects()
+    if idx < 0 or idx >= len(projects):
+        return redirect('/')
+    session['active_project'] = projects[idx]
+    session.modified = True
+
+    kind = (projects[idx].get('kind') or '').strip().lower()
+    if kind == 'image':
+        return redirect('/image')
+    if kind == 'music':
+        return redirect('/music')
+    return redirect('/main')
 
 
 @app.route('/api/suno-callback', methods=['POST'])
@@ -1229,12 +1285,20 @@ def api_generate_poem():
     """API: Generate a Tet wish poem from a single prompt."""
     data = request.get_json(silent=True) or {}
     prompt = (data.get('prompt') or '').strip()
+    poem_style = (data.get('poem_style') or '').strip()
     if not prompt:
         return jsonify({'status': 'error', 'error': 'Missing prompt'}), 400
 
-    trimmed_prompt = _trim_to_max_words(prompt)
-    prompt_truncated = trimmed_prompt != prompt
-    prompt = trimmed_prompt
+    allowed_styles = {
+        'tu_do': 'Thơ tự do (có vần điệu)',
+        'luc_bat': 'Lục bát',
+        'song_that_luc_bat': 'Song thất lục bát',
+        'that_ngon_tu_tuyet': 'Thất ngôn tứ tuyệt (4 câu, 7 chữ)',
+        'that_ngon_bat_cu': 'Thất ngôn bát cú (8 câu, 7 chữ)',
+        'cau_doi': 'Câu đối (2 vế)',
+    }
+    if poem_style not in allowed_styles:
+        poem_style = 'tu_do'
 
     trimmed_prompt = _trim_to_max_words(prompt)
     prompt_truncated = trimmed_prompt != prompt
@@ -1256,13 +1320,61 @@ def api_generate_poem():
         return jsonify({'status': 'error', 'error': err}), 500
 
     model = os.environ.get('OPENAI_TEXT_MODEL', 'gpt-4o-mini')
+
+    style_instructions = {
+        'tu_do': (
+            'Thể thơ: THƠ TỰ DO. Viết 6–10 dòng, câu ngắn vừa phải; có nhịp tự nhiên. '
+            'Bắt buộc có VẦN CHÂN rõ ràng: chọn 1 tiếng/vần kết (ví dụ: “ơi”, “a”, “ang”) và kết thúc đúng bằng tiếng đó ở cuối ít nhất 4 dòng (không nhất thiết mọi dòng). '
+            'Không đặt dấu câu sau tiếng gieo vần.'
+        ),
+        'luc_bat': (
+            'Thể thơ: LỤC BÁT. Viết 6–8 dòng theo cặp 6/8 (luân phiên). '
+            'Bắt buộc giữ đúng số tiếng mỗi dòng (đếm theo các cụm tách bằng dấu cách): 6 tiếng, rồi 8 tiếng. '
+            'Gieo vần theo lục bát: tiếng thứ 6 của câu 6 vần với tiếng thứ 6 của câu 8; '
+            'tiếng cuối câu 8 vần với tiếng thứ 6 câu 6 tiếp theo. '
+            'Trước khi trả lời, hãy tự đếm số tiếng từng câu và sửa cho đúng; không hiển thị phần kiểm tra.'
+        ),
+        'song_that_luc_bat': (
+            'Thể thơ: SONG THẤT LỤC BÁT. Viết 4 câu theo nhịp 7/7/6/8. '
+            'Bắt buộc giữ số tiếng (đếm theo các cụm tách bằng dấu cách): 7, 7, 6, 8. '
+            'Gieo vần mượt, ưu tiên vần chân: câu 1–2–4 cùng vần hoặc gần vần. '
+            'Trước khi trả lời, hãy tự đếm số tiếng từng câu và sửa cho đúng; không hiển thị phần kiểm tra.'
+        ),
+        'that_ngon_tu_tuyet': (
+            'Thể thơ: THẤT NGÔN TỨ TUYỆT. Viết đúng 4 câu, mỗi câu 7 tiếng (7 chữ). '
+            'Bắt buộc có VẦN CHÂN: chọn 1 vần (ví dụ: “-ang”, “-ơi”, “-a”) và gieo vần chân ở cuối câu 1, 2, 4 (câu 3 có thể khác). '
+            'Không đặt dấu câu sau tiếng gieo vần. '
+            'Ngôn từ cổ phong vừa phải, có hình ảnh mùa xuân/Tết. '
+            'Bắt buộc đếm đúng 7 tiếng mỗi câu (đếm theo các cụm tách bằng dấu cách). '
+            'Trước khi trả lời, hãy tự đếm số tiếng từng câu và sửa cho đúng; không hiển thị phần kiểm tra.'
+        ),
+        'that_ngon_bat_cu': (
+            'Thể thơ: THẤT NGÔN BÁT CÚ (Đường luật). Viết đúng 8 câu, mỗi câu 7 tiếng (7 chữ). '
+            'Bắt buộc có VẦN CHÂN: chọn 1 vần (ví dụ: “-ang”, “-ơi”, “-a”) và gieo vần chân ở cuối câu 1, 2, 4, 6, 8. '
+            'Không đặt dấu câu sau tiếng gieo vần. '
+            'Cố gắng có đối ý/đối từ ở cặp câu 3–4 và 5–6 (không cần giải thích luật). '
+            'Bắt buộc đếm đúng 7 tiếng mỗi câu (đếm theo các cụm tách bằng dấu cách). '
+            'Trước khi trả lời, hãy tự đếm số tiếng từng câu và sửa cho đúng; không hiển thị phần kiểm tra.'
+        ),
+        'cau_doi': (
+            'Thể loại: CÂU ĐỐI. Viết đúng 2 câu (2 vế), cân đối độ dài, đối ý/đối từ, giàu khí Tết. '
+            'Ưu tiên vần ở cuối 2 vế (cùng vần hoặc gần vần).'
+        ),
+    }
     system = (
-        'Bạn là một thi sĩ tiếng Việt chuyên sáng tác thơ chúc Tết. '
-        'Nhiệm vụ: viết một bài thơ chúc Tết NGẮN, HAY, có VẦN và NHỊP tự nhiên; ngôn ngữ trong sáng, giàu hình ảnh, gợi không khí sum vầy, an khang. '
-        'Ưu tiên cách viết mộc mà sang, tránh sáo rỗng; hạn chế lặp từ; dùng phép gieo vần chân hoặc vần liền cho mượt. '
-        'Nếu người dùng cung cấp người nhận/từ khóa, hãy lồng vào khéo léo (không liệt kê). '
-        'Ràng buộc: chỉ trả về NỘI DUNG BÀI THƠ (4–8 dòng), không tiêu đề, không giải thích, không chào hỏi.'
-    ) 
+        'Bạn là một thi sĩ Việt Nam, chuyên viết thơ chúc Tết có nhạc tính “đã tai”. '
+        'Mục tiêu bắt buộc: VẦN – NHỊP – LỰC thơ phải mạnh. Đọc lên phải trôi, êm, có điểm rơi ở cuối câu (vần chân) và có nhịp tự nhiên. '
+        'Kỹ thuật (áp dụng tinh tế, không liệt kê ra ngoài): '
+        '- Chọn 1 trường hình ảnh mùa xuân/Tết (mai/đào/lộc/sum vầy/đèn hoa) và phát triển nhất quán. '
+        '- Dùng từ ngữ “đắt”, gợi hình, tránh sáo rỗng; không viết kiểu khẩu hiệu. '
+        '- Ưu tiên vần chân rõ (đồng vần hoặc gần vần), tránh vần gượng; hạn chế lặp từ vô ý. '
+        '- Tạo nhịp bằng cụm 2–3 tiếng, điểm dừng hợp lý; có thể dùng đối ý/đối từ ở cặp câu nếu phù hợp. '
+        '- Tránh các kết hợp từ kì cục/khó đọc; tránh câu quá dài gây hụt nhịp. '
+        'Nếu người dùng cung cấp người nhận/từ khóa, hãy lồng vào tự nhiên (không liệt kê). '
+        f"{style_instructions.get(poem_style, style_instructions['tu_do'])} "
+        'Tự kiểm tra trước khi trả lời: đọc thầm như đọc thơ Việt; sửa chỗ sượng/thiếu nhịp; đảm bảo có vần điệu rõ ràng theo thể thơ. '
+        'Ràng buộc định dạng: chỉ trả về NỘI DUNG (không tiêu đề, không lời dẫn, không đánh số), mỗi câu một dòng.'
+    )
 
     try:
         # Prefer Responses API; fallback to Chat Completions if needed
@@ -1298,7 +1410,232 @@ def api_generate_poem():
             )
             poem_text = (chat.choices[0].message.content or '').strip()
 
-        return jsonify({'status': 'success', 'poem': poem_text.strip(), 'model': model})
+        def _split_lines(text: str) -> list[str]:
+            lines = [(ln or '').strip() for ln in (text or '').splitlines()]
+            return [ln for ln in lines if ln]
+
+        def _count_syllables_by_space(line: str) -> int:
+            # Approximate Vietnamese "tiếng" count: space-separated tokens.
+            parts = [p for p in (line or '').strip().split(' ') if p]
+            return len(parts)
+
+        def _last_token_normalized(line: str) -> str:
+            raw = (line or '').strip()
+            if not raw:
+                return ''
+            last = raw.split()[-1]
+            last = last.strip('"\'“”‘’.,;:!?…–—()[]{}')
+            return last.lower()
+
+        def _strip_vn_diacritics(s: str) -> str:
+            src = (
+                'àáạảãâầấậẩẫăằắặẳẵ'
+                'èéẹẻẽêềếệểễ'
+                'ìíịỉĩ'
+                'òóọỏõôồốộổỗơờớợởỡ'
+                'ùúụủũưừứựửữ'
+                'ỳýỵỷỹ'
+                'đ'
+                'ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ'
+                'ÈÉẸẺẼÊỀẾỆỂỄ'
+                'ÌÍỊỈĨ'
+                'ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ'
+                'ÙÚỤỦŨƯỪỨỰỬỮ'
+                'ỲÝỴỶỸ'
+                'Đ'
+            )
+            dst = (
+                'aaaaaaaaaaaaaaaaa'
+                'eeeeeeeeeee'
+                'iiiii'
+                'ooooooooooooooooo'
+                'uuuuuuuuuuu'
+                'yyyyy'
+                'd'
+                'AAAAAAAAAAAAAAAAA'
+                'EEEEEEEEEEE'
+                'IIIII'
+                'OOOOOOOOOOOOOOOOO'
+                'UUUUUUUUUUU'
+                'YYYYY'
+                'D'
+            )
+            table = {ord(src[i]): dst[i] for i in range(len(src))}
+            return (s or '').translate(table)
+
+        def _rhyme_key_from_token(token: str) -> str:
+            t = _strip_vn_diacritics((token or '').strip().lower())
+            t = t.strip('"\'“”‘’.,;:!?…–—()[]{}')
+            if not t:
+                return ''
+
+            common = [
+                'oang', 'uang', 'uynh', 'uyen', 'uong', 'ieng',
+                'ang', 'anh', 'ach', 'ap', 'at',
+                'ong', 'oc', 'op', 'ot',
+                'ung', 'uc', 'up', 'ut',
+                'inh', 'ich', 'ip', 'it',
+                'eng', 'enh', 'em', 'en', 'ep', 'et',
+                'ieu', 'eo',
+                'oi',
+                'ai', 'ao', 'au', 'ay',
+                'uy',
+                'a', 'e', 'i', 'o', 'u', 'y',
+            ]
+            for r in common:
+                if t.endswith(r):
+                    return r
+            return t[-3:] if len(t) >= 3 else t
+
+        def _validate_fixed_form(text: str, style_key: str) -> tuple[bool, str, dict]:
+            """Return (ok, reason, meta). Meta may include rhyme_key."""
+            lines = _split_lines(text)
+            meta: dict = {'lines': lines}
+
+            if style_key == 'cau_doi':
+                if len(lines) != 2:
+                    return False, 'expected 2 lines for cau_doi', meta
+                return True, '', meta
+
+            if style_key == 'song_that_luc_bat':
+                if len(lines) != 4:
+                    return False, 'expected 4 lines for song_that_luc_bat', meta
+                target = [7, 7, 6, 8]
+                for i, t in enumerate(target):
+                    if _count_syllables_by_space(lines[i]) != t:
+                        return False, f'line {i+1} syllables != {t}', meta
+                return True, '', meta
+
+            if style_key == 'luc_bat':
+                if len(lines) not in (6, 8):
+                    return False, 'expected 6 or 8 lines for luc_bat', meta
+                for i, ln in enumerate(lines):
+                    need = 6 if (i % 2 == 0) else 8
+                    if _count_syllables_by_space(ln) != need:
+                        return False, f'line {i+1} syllables != {need}', meta
+                return True, '', meta
+
+            if style_key == 'that_ngon_tu_tuyet':
+                if len(lines) != 4:
+                    return False, 'expected 4 lines for that_ngon_tu_tuyet', meta
+                for i, ln in enumerate(lines):
+                    if _count_syllables_by_space(ln) != 7:
+                        return False, f'line {i+1} syllables != 7', meta
+                rhyme_idx = [0, 1, 3]
+                keys = [_rhyme_key_from_token(_last_token_normalized(lines[i])) for i in rhyme_idx]
+                keys = [k for k in keys if k]
+                if not keys:
+                    return False, 'empty rhyme token', meta
+                # Require at least two of the rhyme positions share the same vần.
+                from collections import Counter
+                c = Counter(keys)
+                best_key, best_count = c.most_common(1)[0]
+                meta['rhyme_key'] = best_key
+                if best_count < 2:
+                    return False, 'insufficient end-rhyme consistency', meta
+                return True, '', meta
+
+            if style_key == 'that_ngon_bat_cu':
+                if len(lines) != 8:
+                    return False, 'expected 8 lines for that_ngon_bat_cu', meta
+                for i, ln in enumerate(lines):
+                    if _count_syllables_by_space(ln) != 7:
+                        return False, f'line {i+1} syllables != 7', meta
+                rhyme_idx = [0, 1, 3, 5, 7]
+                keys = [_rhyme_key_from_token(_last_token_normalized(lines[i])) for i in rhyme_idx]
+                keys = [k for k in keys if k]
+                if not keys:
+                    return False, 'empty rhyme token', meta
+                from collections import Counter
+                c = Counter(keys)
+                best_key, best_count = c.most_common(1)[0]
+                meta['rhyme_key'] = best_key
+                # Require at least three of the five rhyme positions share the same vần.
+                if best_count < 3:
+                    return False, 'insufficient end-rhyme consistency', meta
+                return True, '', meta
+
+            # tu_do (no strict validation)
+            return True, '', meta
+
+        poem_text = (poem_text or '').strip()
+
+        # Auto-repair once for strict forms to better guarantee meter/rhyme.
+        if poem_text and poem_style in {
+            'luc_bat',
+            'song_that_luc_bat',
+            'that_ngon_tu_tuyet',
+            'that_ngon_bat_cu',
+            'cau_doi',
+        }:
+            ok, reason, meta = _validate_fixed_form(poem_text, poem_style)
+            if not ok:
+                rhyme_key = meta.get('rhyme_key')
+
+                meter_check = {
+                    'luc_bat': 'KIỂM TRA THỂ: 6 hoặc 8 dòng; dòng 1/3/5/7 = 6 tiếng, dòng 2/4/6/8 = 8 tiếng (đếm theo các cụm tách bằng dấu cách).',
+                    'song_that_luc_bat': 'KIỂM TRA THỂ: đúng 4 dòng, số tiếng lần lượt 7 / 7 / 6 / 8 (đếm theo các cụm tách bằng dấu cách).',
+                    'that_ngon_tu_tuyet': 'KIỂM TRA THỂ: đúng 4 dòng, mỗi dòng đúng 7 tiếng (đếm theo các cụm tách bằng dấu cách).',
+                    'that_ngon_bat_cu': 'KIỂM TRA THỂ: đúng 8 dòng, mỗi dòng đúng 7 tiếng (đếm theo các cụm tách bằng dấu cách).',
+                    'cau_doi': 'KIỂM TRA THỂ: đúng 2 dòng (2 vế), cân đối độ dài.',
+                }.get(poem_style, '')
+
+                repair_system = (
+                    'Bạn là biên tập viên thơ tiếng Việt. Hãy CHỈNH SỬA bài thơ bên dưới để tuân thủ đúng thể thơ và vần điệu. '
+                    'Giữ ý nghĩa chúc Tết theo prompt người dùng, viết mượt, tự nhiên. '
+                    'Ràng buộc: chỉ xuất ra bài thơ cuối cùng, mỗi câu một dòng, không tiêu đề, không giải thích.'
+                )
+
+                try:
+                    for attempt in range(2):
+                        extra_strict = (
+                            'LƯU Ý: Bắt buộc đúng số tiếng từng dòng. Nếu dòng thiếu/dư tiếng, hãy thêm/bớt từ để đúng. '
+                            'Tránh dấu câu rườm rà; ưu tiên câu chữ rõ ràng.'
+                            if attempt == 1
+                            else ''
+                        )
+
+                        repair_user = (
+                            f'PROMPT GỐC (để giữ ý):\n{prompt}\n\n'
+                            f'THỂ THƠ BẮT BUỘC: {allowed_styles.get(poem_style, poem_style)}\n'
+                            + (meter_check + '\n' if meter_check else '')
+                            + (f"VẦN CHÂN BẮT BUỘC: các dòng gieo vần phải cùng VẦN (cùng đuôi vần như '{rhyme_key}'), gieo vần chân rõ ràng.\n" if rhyme_key else '')
+                            + (extra_strict + '\n' if extra_strict else '')
+                            + f'BÀI THƠ CẦN SỬA:\n{poem_text}'
+                        )
+
+                        chat2 = client.chat.completions.create(
+                            model=model,
+                            messages=[
+                                {'role': 'system', 'content': repair_system},
+                                {'role': 'user', 'content': repair_user},
+                            ],
+                            temperature=0.2,
+                        )
+                        repaired = (chat2.choices[0].message.content or '').strip()
+                        if repaired:
+                            ok2, _, _ = _validate_fixed_form(repaired, poem_style)
+                            if ok2:
+                                poem_text = repaired
+                                break
+                except Exception:
+                    pass
+        if poem_text:
+            title = poem_text.splitlines()[0].strip() if poem_text.splitlines() else ''
+            if not title:
+                title = 'Thơ chúc Tết'
+            _add_project(
+                'poem',
+                title,
+                {
+                    'prompt': _cap_text(prompt, 600),
+                    'poem': _cap_text(poem_text, 1400),
+                    'poem_style': poem_style,
+                    'prompt_truncated': bool(prompt_truncated),
+                },
+            )
+
+        return jsonify({'status': 'success', 'poem': poem_text, 'model': model, 'poem_style': poem_style})
     except Exception as e:
         return jsonify({'status': 'error', 'error': f'OpenAI request failed: {e}'}), 500
 
@@ -1331,6 +1668,16 @@ def api_generate_image():
 
     if err:
         return jsonify({'status': 'error', 'error': err}), 500
+
+    # Save a lightweight project (do NOT store base64 image data in cookie session)
+    _add_project(
+        'image',
+        'Ảnh chúc Tết',
+        {
+            'prompt': _cap_text(prompt, 600),
+            'note': 'Mở lại sẽ khôi phục prompt (ảnh cần tạo lại).',
+        },
+    )
     return jsonify({'status': 'success', **(payload or {})})
 
 
@@ -1395,6 +1742,25 @@ def api_generate_music():
     if remix and isinstance(remix, dict):
         resp['lyrics_provider'] = remix.get('provider')
         resp['lyrics_model'] = remix.get('model')
+
+    # Save a lightweight project
+    proj_title = title or ''
+    if not proj_title:
+        first_line = (prompt or '').splitlines()[0].strip() if (prompt or '').splitlines() else ''
+        proj_title = first_line[:60] if first_line else 'Bài nhạc'
+    _add_project(
+        'music',
+        proj_title,
+        {
+            'prompt': _cap_text(prompt, 1200),
+            'title': _cap_text(title or proj_title, 120),
+            'style': _cap_text(style or '', 120),
+            'lyrics': _cap_text(resp.get('lyrics') if isinstance(resp, dict) else '', 1800),
+            'audio_url': _cap_text((music or {}).get('audio_url') if isinstance(music, dict) else '', 600),
+            'remake_lyrics': bool(remake_lyrics),
+            'prompt_truncated': bool(prompt_truncated),
+        },
+    )
 
     return jsonify({'status': 'success', **resp})
 

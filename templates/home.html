@@ -701,6 +701,257 @@
             line-height: 1.6;
         }
 
+        .feature-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .feature-link.feature-card {
+            cursor: pointer;
+        }
+
+        .feature-link:focus-visible {
+            outline: 3px solid rgba(212, 175, 55, 0.7);
+            outline-offset: 3px;
+        }
+
+        .is-hidden {
+            display: none !important;
+        }
+
+        .project-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .project-kind {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(255, 255, 255, 0.65);
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: var(--red-deep);
+        }
+
+        .project-time {
+            font-size: 0.86rem;
+            opacity: 0.72;
+        }
+
+        .project-card {
+            display: flex;
+            align-items: center;
+            text-align: left;
+            gap: 18px;
+            padding: 22px;
+        }
+
+        .project-card .feature-icon {
+            font-size: 2.1rem;
+            margin-bottom: 0;
+        }
+
+        .project-snippet {
+            margin: 0;
+            font-size: 0.95rem;
+            opacity: 0.82;
+            line-height: 1.55;
+            display: -webkit-box;
+            line-clamp: 2;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .project-arrow {
+            margin-left: auto;
+            opacity: 0.55;
+            transition: transform 0.22s ease, opacity 0.22s ease;
+        }
+
+        .project-card:hover .project-arrow {
+            transform: translateX(4px);
+            opacity: 0.85;
+        }
+
+        .projects-shell {
+            margin: 18px 20px 0;
+            padding: 10px;
+            border-radius: 22px;
+            border: 1px dashed rgba(212, 175, 55, 0.75);
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(254, 254, 250, 0.72));
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(12px);
+        }
+
+        .projects-shell .features {
+            padding: 18px 12px 10px;
+        }
+
+        .projects-more-row {
+            display: flex;
+            justify-content: center;
+            padding: 2px 12px 12px;
+        }
+
+        .projects-more-btn {
+            appearance: none;
+            border: 1px solid rgba(212, 175, 55, 0.52);
+            background: rgba(255, 255, 255, 0.74);
+            color: var(--red-deep);
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+        }
+
+        .projects-more-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.92);
+            border-color: rgba(212, 175, 55, 0.72);
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 12, 0.55);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 220ms ease;
+            z-index: 999;
+        }
+
+        .modal-backdrop.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 220ms ease;
+            z-index: 1000;
+        }
+
+        .modal.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            width: min(720px, 92vw);
+            background: rgba(254, 254, 250, 0.92);
+            border: 1px solid rgba(212, 175, 55, 0.38);
+            border-radius: 22px;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(14px);
+            padding: 18px;
+            position: relative;
+        }
+
+        .modal-title {
+            margin: 6px 8px 4px;
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--red-deep);
+            letter-spacing: 0.2px;
+        }
+
+        .modal-desc {
+            margin: 0 8px 14px;
+            opacity: 0.82;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.38);
+            background: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 180ms ease, background 180ms ease;
+        }
+
+        .modal-close:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 0 6px 6px;
+        }
+
+        .modal-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 14px;
+            border-radius: 18px;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            background: rgba(255, 255, 255, 0.76);
+            transition: transform 200ms ease, border-color 200ms ease;
+        }
+
+        .modal-option:hover {
+            transform: translateY(-2px);
+            border-color: rgba(212, 175, 55, 0.6);
+        }
+
+        .modal-option-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139, 0, 0, 0.08);
+            border: 1px solid rgba(139, 0, 0, 0.14);
+            color: var(--red-deep);
+            font-size: 1.2rem;
+        }
+
+        .modal-option-title {
+            font-weight: 900;
+            color: var(--red-deep);
+            margin: 0;
+        }
+
+        .modal-option-desc {
+            margin: 2px 0 0;
+            opacity: 0.78;
+            font-size: 0.92rem;
+        }
+
         .decoration {
             position: absolute;
             pointer-events: none;
@@ -972,6 +1223,10 @@
                 margin: 10px 14px 0;
             }
 
+            .projects-shell {
+                margin: 16px 14px 0;
+            }
+
             .decoration-1,
             .decoration-2 {
                 left: 22px;
@@ -1129,6 +1384,15 @@
                 margin: 10px 10px 0;
             }
 
+            .projects-shell {
+                margin: 14px 10px 0;
+                padding: 10px;
+            }
+
+            .projects-shell .features {
+                padding: 16px 10px 10px;
+            }
+
             .footer-bottom {
                 padding-left: 12px;
                 padding-right: 12px;
@@ -1227,7 +1491,7 @@
             <div class="hero-headline reveal" style="--d: 0ms;">
                 <div class="hero-kicker"><i class="fa-solid fa-microchip" aria-hidden="true"></i>Công nghệ giao thoa truyền thống</div>
                 <h1 class="hero-title">Sắc <span class="highlight">Xuân</span> AI</h1>
-                <p class="hero-subtitle">Tạo thơ chúc Tết bằng “AI” theo prompt của bạn — nhanh, đẹp, đúng ngữ cảnh và dễ copy để gửi ngay.</p>
+                <p class="hero-subtitle">Tạo thơ, ảnh & nhạc chúc Tết bằng “AI” theo ý của bạn — nhanh gọn, hay ho, đẹp mắt!</p>
                 <span class="hero-divider" aria-hidden="true"></span>
             </div>
 
@@ -1235,15 +1499,15 @@
             <div class="text-section">
                 <p class="greeting">Chào mừng năm mới</p>
                 <h2 class="main-title">
-                    <span class="highlight">AI</span> tạo thơ chúc Tết<br>
+                    <span class="highlight">AI</span> tạo thơ • ảnh • nhạc chúc Tết<br>
                     theo gu của bạn
                 </h2>
                 <p class="description">
-                    Nhập prompt theo ý bạn (người nhận, tông giọng, từ khoá, độ dài...) — hệ thống sẽ tạo bài thơ chúc Tết gọn gàng,
-                    “đúng vibe”, dễ đọc và sẵn sàng để bạn gửi đi.
+                    Nhập prompt theo ý bạn (người nhận, tông giọng, từ khoá, độ dài...) — bạn có thể tạo nhanh một dự án dạng
+                    <b>thơ</b>, <b>ảnh</b> hoặc <b>nhạc</b> để gửi lời chúc theo cách bạn muốn.
                 </p>
                 <div class="cta-row">
-                    <a href="/main" class="cta-button">Tạo Thơ Ngay <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></a>
+                    <a href="/main" class="cta-button" id="createProjectBtn">Tạo dự án <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></a>
                     <a href="#tinh-nang" class="secondary-link"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>Xem cách hoạt động</a>
                 </div>
             </div>
@@ -1262,37 +1526,115 @@
         </div>
         </section>
 
+        <section class="section" id="du-an">
+            <div class="section-header reveal" style="--d: 0ms;">
+                <div>
+                    <h2 class="section-title">Dự án</h2>
+                    <p class="section-subtitle">Các dự án gần đây được lưu tạm trong phiên (session). Bấm để mở lại.</p>
+                </div>
+            </div>
+            <div class="section-rule" aria-hidden="true"></div>
+
+            <div class="projects-shell" id="projectsShell">
+            <div class="features" id="projectsList">
+                {% if projects and projects|length > 0 %}
+                    {% for p in projects %}
+                        <a class="feature-card feature-link project-card project-item reveal{% if loop.index0 >= 3 %} is-hidden{% endif %}" data-idx="{{ loop.index0 }}" href="/project/open/{{ loop.index0 }}" style="--d: {{ 80 + loop.index0 * 60 }}ms;">
+                            <div class="feature-icon">
+                                {% if (p.kind or '') == 'image' %}
+                                    <i class="fa-regular fa-image" aria-hidden="true"></i>
+                                {% elif (p.kind or '') == 'music' %}
+                                    <i class="fa-solid fa-music" aria-hidden="true"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-pen-nib" aria-hidden="true"></i>
+                                {% endif %}
+                            </div>
+                            <div class="feature-content">
+                                <div class="project-meta">
+                                    <span class="project-kind">
+                                        {% if (p.kind or '') == 'image' %}
+                                            Ảnh
+                                        {% elif (p.kind or '') == 'music' %}
+                                            Nhạc
+                                        {% else %}
+                                            Thơ
+                                        {% endif %}
+                                    </span>
+                                    {% if p.ts %}
+                                        <span class="project-time" data-ts="{{ p.ts }}"></span>
+                                    {% endif %}
+                                </div>
+                                <h3 class="feature-title">{{ p.title }}</h3>
+
+                                {% set snippet = '' %}
+                                {% if p.data and p.data.prompt is string and p.data.prompt %}
+                                    {% set snippet = p.data.prompt %}
+                                {% elif p.data and p.data.lyrics is string and p.data.lyrics %}
+                                    {% set snippet = p.data.lyrics %}
+                                {% elif p.data and p.data.poem is string and p.data.poem %}
+                                    {% set snippet = p.data.poem %}
+                                {% endif %}
+                                {% if snippet %}
+                                    {% set snippet_one = (snippet | replace('\n', ' ') | replace('\r', ' ')) %}
+                                    <p class="project-snippet">{{ snippet_one[:140] }}{% if snippet_one|length > 140 %}…{% endif %}</p>
+                                {% else %}
+                                    <p class="project-snippet">Mở lại dự án này</p>
+                                {% endif %}
+                            </div>
+                            <div class="project-arrow" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></div>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="feature-card reveal" style="--d: 80ms; text-align: left;">
+                        <div class="feature-icon"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">Chưa có dự án</h3>
+                            <p class="feature-desc">Hãy tạo thơ/ảnh/nhạc trước. Sau đó dự án sẽ xuất hiện ở đây để bạn mở lại.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if projects and projects|length > 3 %}
+                <div class="projects-more-row">
+                    <button class="projects-more-btn" id="projectsMoreBtn" type="button">
+                        Xem thêm <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                </div>
+            {% endif %}
+            </div>
+        </section>
+
         <section class="section" id="tinh-nang">
             <div class="section-header reveal" style="--d: 0ms;">
                 <div>
                     <h2 class="section-title">Tính năng nổi bật</h2>
-                    <p class="section-subtitle">Tập trung vào trải nghiệm: tải nhanh, thao tác trực quan, bố cục rõ ràng và đồng nhất Desktop / iPad / Mobile.</p>
                 </div>
             </div>
             <div class="section-rule" aria-hidden="true"></div>
 
             <div class="features">
-            <div class="feature-card reveal" style="--d: 80ms;">
-                <div class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></div>
+            <a class="feature-card feature-link reveal" href="/main" style="--d: 80ms;">
+                <div class="feature-icon"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></div>
                 <div class="feature-content">
-                    <h3 class="feature-title">Tạo thơ tức thì</h3>
-                    <p class="feature-desc">Sinh thơ chúc Tết theo người nhận, tông giọng và từ khoá</p>
+                    <h3 class="feature-title">Tạo thơ</h3>
+                    <p class="feature-desc">Sinh thơ chúc Tết theo prompt của bạn</p>
                 </div>
-            </div>
-            <div class="feature-card reveal" style="--d: 140ms;">
-                <div class="feature-icon"><i class="fa-solid fa-robot" aria-hidden="true"></i></div>
+            </a>
+            <a class="feature-card feature-link reveal" href="/image" style="--d: 140ms;">
+                <div class="feature-icon"><i class="fa-regular fa-image" aria-hidden="true"></i></div>
                 <div class="feature-content">
-                    <h3 class="feature-title">Gợi ý theo ngữ cảnh</h3>
-                    <p class="feature-desc">Lời chúc phù hợp gia đình, bạn bè, đồng nghiệp, khách hàng…</p>
+                    <h3 class="feature-title">Tạo ảnh</h3>
+                    <p class="feature-desc">Biến lời chúc thành ảnh minh hoạ để đăng/gửi</p>
                 </div>
-            </div>
-            <div class="feature-card reveal" style="--d: 200ms;">
-                <div class="feature-icon"><i class="fa-solid fa-copy" aria-hidden="true"></i></div>
+            </a>
+            <a class="feature-card feature-link reveal" href="/music" style="--d: 200ms;">
+                <div class="feature-icon"><i class="fa-solid fa-music" aria-hidden="true"></i></div>
                 <div class="feature-content">
-                    <h3 class="feature-title">Copy & gửi ngay</h3>
-                    <p class="feature-desc">Một chạm sao chép — gửi Zalo/FB/Email cực nhanh</p>
+                    <h3 class="feature-title">Tạo nhạc</h3>
+                    <p class="feature-desc">Tạo audio/MP3 từ lời bạn viết (có vocal)</p>
                 </div>
-            </div>
+            </a>
             </div>
         </section>
 
@@ -1329,6 +1671,41 @@
                 </div>
             </div>
         </section>
+
+        <div class="modal-backdrop" id="projectModalBackdrop" aria-hidden="true"></div>
+        <div class="modal" id="projectModal" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle" aria-describedby="projectModalDesc" aria-hidden="true">
+            <div class="modal-card" role="document">
+                <button class="modal-close" id="projectModalClose" type="button" aria-label="Đóng">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+                <div class="modal-title" id="projectModalTitle">Chọn loại dự án</div>
+                <p class="modal-desc" id="projectModalDesc">Bạn muốn tạo gì hôm nay?</p>
+
+                <div class="modal-grid">
+                    <a class="modal-option" id="projectModalFirst" href="/main">
+                        <span class="modal-option-icon"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></span>
+                        <span>
+                            <span class="modal-option-title">Tạo thơ</span>
+                            <span class="modal-option-desc">Viết lời chúc theo prompt</span>
+                        </span>
+                    </a>
+                    <a class="modal-option" href="/image">
+                        <span class="modal-option-icon"><i class="fa-regular fa-image" aria-hidden="true"></i></span>
+                        <span>
+                            <span class="modal-option-title">Tạo ảnh</span>
+                            <span class="modal-option-desc">Poster/ảnh minh hoạ Tết</span>
+                        </span>
+                    </a>
+                    <a class="modal-option" href="/music">
+                        <span class="modal-option-icon"><i class="fa-solid fa-music" aria-hidden="true"></i></span>
+                        <span>
+                            <span class="modal-option-title">Tạo nhạc</span>
+                            <span class="modal-option-desc">Tạo MP3 từ lời bạn viết</span>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="footer" role="contentinfo">
@@ -1425,6 +1802,109 @@
                 }, { threshold: 0.12, rootMargin: '0px 0px -10% 0px' });
 
                 items.forEach((el) => io.observe(el));
+            })();
+
+            // Project modal (Create project)
+            (function setupProjectModal() {
+                const btn = document.getElementById('createProjectBtn');
+                const modal = document.getElementById('projectModal');
+                const backdrop = document.getElementById('projectModalBackdrop');
+                const closeBtn = document.getElementById('projectModalClose');
+                const first = document.getElementById('projectModalFirst');
+                if (!btn || !modal || !backdrop) return;
+
+                let lastFocus = null;
+
+                function openModal() {
+                    lastFocus = document.activeElement;
+                    document.body.classList.add('modal-open');
+                    modal.classList.add('is-open');
+                    backdrop.classList.add('is-open');
+                    modal.setAttribute('aria-hidden', 'false');
+                    backdrop.setAttribute('aria-hidden', 'false');
+                    setTimeout(() => {
+                        if (first && typeof first.focus === 'function') first.focus();
+                    }, 0);
+                }
+
+                function closeModal() {
+                    document.body.classList.remove('modal-open');
+                    modal.classList.remove('is-open');
+                    backdrop.classList.remove('is-open');
+                    modal.setAttribute('aria-hidden', 'true');
+                    backdrop.setAttribute('aria-hidden', 'true');
+                    const el = lastFocus;
+                    lastFocus = null;
+                    if (el && typeof el.focus === 'function') {
+                        setTimeout(() => el.focus(), 0);
+                    }
+                }
+
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openModal();
+                });
+
+                if (closeBtn) closeBtn.addEventListener('click', closeModal);
+                backdrop.addEventListener('click', closeModal);
+
+                document.addEventListener('keydown', (e) => {
+                    if (!modal.classList.contains('is-open')) return;
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        closeModal();
+                    }
+                });
+            })();
+
+            // Project timestamps
+            (function renderProjectTimes() {
+                const els = Array.from(document.querySelectorAll('.project-time[data-ts]'));
+                if (!els.length) return;
+                const fmt = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                els.forEach((el) => {
+                    const ts = Number(el.getAttribute('data-ts') || '');
+                    if (!isFinite(ts) || ts <= 0) return;
+                    const d = new Date(ts * 1000);
+                    if (!isFinite(d.getTime())) return;
+                    el.textContent = fmt.format(d);
+                });
+            })();
+
+            // Projects: show 3 by default, reveal 3 per click
+            (function setupProjectsMore() {
+                const list = document.getElementById('projectsList');
+                const btn = document.getElementById('projectsMoreBtn');
+                if (!list || !btn) return;
+
+                const items = Array.from(list.querySelectorAll('.project-item'));
+                if (!items.length) {
+                    btn.style.display = 'none';
+                    return;
+                }
+
+                function syncButtonVisibility() {
+                    const anyHidden = items.some((el) => el.classList.contains('is-hidden'));
+                    btn.style.display = anyHidden ? '' : 'none';
+                }
+
+                // Ensure initial state: only first 3 shown
+                items.forEach((el, idx) => {
+                    el.classList.toggle('is-hidden', idx >= 3);
+                });
+                syncButtonVisibility();
+
+                btn.addEventListener('click', () => {
+                    let revealed = 0;
+                    for (const el of items) {
+                        if (revealed >= 3) break;
+                        if (el.classList.contains('is-hidden')) {
+                            el.classList.remove('is-hidden');
+                            revealed += 1;
+                        }
+                    }
+                    syncButtonVisibility();
+                });
             })();
 
             const container = document.getElementById('dragon-container');

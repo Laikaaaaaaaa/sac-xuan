@@ -382,6 +382,24 @@
             box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
         }
 
+        select {
+            width: 100%;
+            padding: 12px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.30);
+            background: rgba(254, 254, 250, 0.92);
+            color: var(--text-dark);
+            outline: none;
+            font-family: inherit;
+            line-height: 1.55;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        select:focus {
+            border-color: rgba(212, 175, 55, 0.55);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
+        }
+
         .chips {
             display: flex;
             flex-wrap: wrap;
@@ -464,6 +482,61 @@
             font-weight: 850;
         }
 
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(45, 24, 16, 0.22);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-card {
+            width: min(520px, 92vw);
+            border-radius: 18px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(254, 254, 250, 0.92);
+            box-shadow: 0 18px 60px rgba(45, 24, 16, 0.14);
+            padding: 16px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 4px solid rgba(212, 175, 55, 0.28);
+            border-top-color: rgba(139, 0, 0, 0.72);
+            animation: spin 0.9s linear infinite;
+            flex: 0 0 auto;
+        }
+
+        .loading-title {
+            margin: 0;
+            font-weight: 900;
+            color: var(--red-deep);
+            letter-spacing: 0.2px;
+        }
+
+        .loading-sub {
+            margin: 4px 0 0;
+            opacity: 0.82;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .toggle {
             display: inline-flex;
             align-items: center;
@@ -502,13 +575,13 @@
             margin: 0;
             white-space: pre-wrap;
             line-height: 1.8;
-            font-size: 15px;
+            font-size: 17px;
             color: rgba(45, 24, 16, 0.92);
         }
 
         .poem-text.calligraphy {
             font-family: 'TetCouplet', 'Be Vietnam Pro', sans-serif;
-            font-size: 1.14rem;
+            font-size: 1.28rem;
             letter-spacing: 0.2px;
         }
 
@@ -705,6 +778,15 @@
 <body>
     <div class="watermark" aria-hidden="true"></div>
     <div class="menu-backdrop" id="menuBackdrop" aria-hidden="true"></div>
+    <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+        <div class="loading-card" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div>
+                <p class="loading-title" id="loadingTitle">Đang xử lý…</p>
+                <p class="loading-sub" id="loadingSub">Vui lòng đợi một chút.</p>
+            </div>
+        </div>
+    </div>
     <div class="page-wrapper">
         <header class="topbar">
             <div class="container">
@@ -739,7 +821,7 @@
             <section class="hero reveal" style="--d: 0ms;">
                 <div class="container content">
                     <div class="kicker"><i class="fa-solid fa-microchip" aria-hidden="true"></i>Gọn đẹp, dễ copy để gửi ngay</div>
-                    <h1 class="h1"><span class="highlight">AI</span> tạo thơ chúc Tết</h1>
+                    <h1 class="h1"><span class="highlight">AI</span> tạo thơ Tết</h1>
                     <p class="lead">Nhập prompt theo ý bạn (người nhận, tông giọng, từ khoá, độ dài…). Bấm “Tạo thơ” để nhận bài thơ gọn gàng và dễ chia sẻ.</p>
                     <div class="divider" aria-hidden="true"></div>
                 </div>
@@ -754,6 +836,16 @@
                         <form id="poemForm" autocomplete="off">
                             <label for="prompt">Prompt</label>
                             <textarea id="prompt" name="prompt" placeholder="Ví dụ: Viết một bài thơ chúc Tết vui tươi cho bạn bè, nhắc tới an khang, tài lộc, sức khoẻ, độ dài 6 dòng."></textarea>
+
+                            <label for="poemStyle">Thể thơ</label>
+                            <select id="poemStyle" name="poemStyle">
+                                <option value="tu_do" selected>Thơ tự do (có vần điệu)</option>
+                                <option value="luc_bat">Lục bát</option>
+                                <option value="song_that_luc_bat">Song thất lục bát</option>
+                                <option value="that_ngon_tu_tuyet">Thất ngôn tứ tuyệt (4 câu)</option>
+                                <option value="that_ngon_bat_cu">Thất ngôn bát cú (8 câu)</option>
+                                <option value="cau_doi">Câu đối (2 vế)</option>
+                            </select>
 
                             <div class="chips" aria-label="Gợi ý prompt nhanh">
                                 <span class="chip" data-k="Viết thơ chúc Tết trang trọng cho sếp, 4 dòng, lịch sự.">Cho sếp</span>
@@ -821,6 +913,7 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
             </div>
         </footer>
     </div>
+        <script id="activeProjectJson" type="application/json">{{ active_project|tojson }}</script>
     <script>
         (function() {
             document.getElementById('year').textContent = String(new Date().getFullYear());
@@ -888,7 +981,34 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
             const regenBtn = document.getElementById('regen');
             const calligraphyToggle = document.getElementById('calligraphy');
             const promptEl = document.getElementById('prompt');
+            const poemStyleEl = document.getElementById('poemStyle');
             const statusEl = document.getElementById('status');
+
+            const overlayEl = document.getElementById('loadingOverlay');
+            const overlayTitleEl = document.getElementById('loadingTitle');
+            const overlaySubEl = document.getElementById('loadingSub');
+
+            function setLoading(isLoading, titleText, subText) {
+                if (!overlayEl) return;
+                overlayEl.classList.toggle('show', Boolean(isLoading));
+                overlayEl.setAttribute('aria-hidden', isLoading ? 'false' : 'true');
+                if (overlayTitleEl) overlayTitleEl.textContent = titleText || 'Đang xử lý…';
+                if (overlaySubEl) overlaySubEl.textContent = subText || 'Vui lòng đợi một chút.';
+
+                // Prevent double submits
+                try {
+                    const disabled = Boolean(isLoading);
+                    if (regenBtn) regenBtn.disabled = disabled;
+                    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+                    if (submitBtn) submitBtn.disabled = disabled;
+                } catch {}
+            }
+
+            function getActiveProject() {
+                const el = document.getElementById('activeProjectJson');
+                if (!el) return null;
+                try { return JSON.parse(el.textContent || 'null'); } catch { return null; }
+            }
 
             function setStatus(text, kind) {
                 statusEl.textContent = text || '';
@@ -911,6 +1031,9 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
                     promptEl.addEventListener('input', clearSuccessOnUserEdit, opts);
                     promptEl.addEventListener('keydown', clearSuccessOnUserEdit, opts);
                 }
+                if (poemStyleEl) {
+                    poemStyleEl.addEventListener('change', clearSuccessOnUserEdit, opts);
+                }
                 if (calligraphyToggle) {
                     calligraphyToggle.addEventListener('change', clearSuccessOnUserEdit, opts);
                 }
@@ -918,6 +1041,7 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
 
             async function generateViaApi() {
                 const prompt = (promptEl.value || '').trim();
+                const poem_style = (poemStyleEl && poemStyleEl.value ? poemStyleEl.value : 'tu_do');
                 if (!prompt) {
                     setStatus('Bạn hãy nhập prompt trước đã.', 'error');
                     promptEl.focus();
@@ -926,23 +1050,31 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
 
                 setStatus('Đang gọi AI tạo thơ…', 'info');
                 poemText.textContent = 'Đang tạo thơ…';
+                setLoading(true, 'Đang tạo thơ…', 'Mình đang “chế biến” lời chúc theo prompt của bạn.');
 
-                const res = await fetch('/api/generate-poem', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt })
-                });
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok || !json || json.status !== 'success') {
-                    const msg = (json && (json.error || json.message)) || 'Không thể tạo thơ. Kiểm tra server log / OPENAI_API_KEY.';
-                    setStatus(msg, 'error');
+                try {
+                    const res = await fetch('/api/generate-poem', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, poem_style })
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json || json.status !== 'success') {
+                        const msg = (json && (json.error || json.message)) || 'Không thể tạo thơ. Kiểm tra server log / OPENAI_API_KEY.';
+                        setStatus(msg, 'error');
+                        poemText.textContent = 'Có lỗi khi tạo thơ.';
+                        return;
+                    }
+
+                    poemText.textContent = (json.poem || '').trim();
+                    setStatus('Đã tạo xong! Bạn có thể bấm Copy để gửi.', 'success');
+                    armDismissSuccessOnUserEdit();
+                } catch (e) {
+                    setStatus('Lỗi: ' + (e && e.message ? e.message : String(e)), 'error');
                     poemText.textContent = 'Có lỗi khi tạo thơ.';
-                    return;
+                } finally {
+                    setLoading(false);
                 }
-
-                poemText.textContent = (json.poem || '').trim();
-                setStatus('Đã tạo xong! Bạn có thể bấm Copy để gửi.', 'success');
-                armDismissSuccessOnUserEdit();
             }
 
             async function copyPoem() {
@@ -993,6 +1125,24 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
 
             // Initial
             setStatus('', 'info');
+
+            // Prefill from session project (if any)
+            (function applyActiveProject() {
+                const ACTIVE_PROJECT = getActiveProject();
+                if (!ACTIVE_PROJECT || typeof ACTIVE_PROJECT !== 'object') return;
+                const data = ACTIVE_PROJECT.data || {};
+                if (data && typeof data.prompt === 'string' && promptEl) {
+                    promptEl.value = data.prompt;
+                }
+                if (data && typeof data.poem_style === 'string' && poemStyleEl) {
+                    poemStyleEl.value = data.poem_style;
+                }
+                if (data && typeof data.poem === 'string' && poemText) {
+                    poemText.textContent = (data.poem || '').trim() || poemText.textContent;
+                    setStatus('Đã mở dự án. Bạn có thể copy hoặc tạo lại.', 'success');
+                    armDismissSuccessOnUserEdit();
+                }
+            })();
         })();
     </script>
 </body>
