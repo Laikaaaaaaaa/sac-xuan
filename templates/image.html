@@ -998,7 +998,7 @@
                 hint.textContent = 'Đang tạo ảnh…';
                 setDownloading(false);
 
-                setLoading(true, 'Đang tạo ảnh…', 'Có thể mất vài giây tuỳ độ phức tạp prompt.');
+                setLoading(true, 'Đang tạo ảnh…', 'Có thể mất vài giây tuỳ độ phức tạp ý của bạn.');
 
                 try {
                     const res = await fetch('/api/generate-image', {

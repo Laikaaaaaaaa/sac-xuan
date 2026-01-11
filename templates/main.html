@@ -1043,7 +1043,7 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
 
                 setStatus('Đang gọi AI tạo thơ…', 'info');
                 poemText.textContent = 'Đang tạo thơ…';
-                setLoading(true, 'Đang tạo thơ…', 'Mình đang “chế biến” lời chúc theo prompt của bạn.');
+                setLoading(true, 'Đang tạo thơ…', 'Mình đang “chế biến” lời chúc theo ý của bạn.');
 
                 try {
                     const res = await fetch('/api/generate-poem', {
