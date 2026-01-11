@@ -8,13 +8,33 @@ import os
 import json
 import time
 import base64
+import re
+from pathlib import Path
+
+_DOTENV_PATH = Path(__file__).resolve().parent / '.env'
+_DOTENV_MTIME: float | None = None
+_reload_dotenv_if_changed = None
 
 # Load local .env if present (keeps secrets out of code)
 try:
     from dotenv import load_dotenv  # type: ignore
 
-    # In local dev, prefer .env values over inherited shell env vars.
-    load_dotenv(override=True)
+    def _reload_dotenv_if_changed():
+        """Reload .env when file changes (dev convenience)."""
+        global _DOTENV_MTIME
+        try:
+            if _DOTENV_PATH.exists():
+                mtime = float(_DOTENV_PATH.stat().st_mtime)
+                if _DOTENV_MTIME is None or mtime != _DOTENV_MTIME:
+                    load_dotenv(dotenv_path=_DOTENV_PATH, override=True)
+                    _DOTENV_MTIME = mtime
+            else:
+                load_dotenv(override=True)
+        except Exception:
+            pass
+
+    # Initial load
+    _reload_dotenv_if_changed()
 except Exception:
     pass
 
@@ -49,6 +69,13 @@ def _dev_no_cache(response):
         response.headers['Expires'] = '0'
     return response
 
+
+@app.before_request
+def _dev_reload_env():
+    """In debug, reload .env automatically when edited."""
+    if app.debug and callable(_reload_dotenv_if_changed):
+        _reload_dotenv_if_changed()
+
 # =============================================
 # ROUTES - Các trang chính
 # =============================================
@@ -71,6 +98,24 @@ def main():
 def image():
     """Trang tạo ảnh chúc Tết từ prompt"""
     return render_template('image.html')
+
+
+@app.route('/music')
+@app.route('/music/')
+def music():
+    """Trang tạo nhạc/audio chúc Tết từ prompt"""
+    return render_template('music.html')
+
+
+@app.route('/api/suno-callback', methods=['POST'])
+def api_suno_callback():
+    """Webhook receiver for Kie.ai/Suno callbacks.
+
+    Note: In local dev, Kie.ai cannot reach http://127.0.0.1.
+    Use a public URL (ngrok/cloudflared) when you actually want callbacks.
+    """
+    _ = request.get_json(silent=True) or {}
+    return jsonify({'status': 'received'})
 
 
 def _get_openai_client():
@@ -139,6 +184,143 @@ def _generate_image_with_openai(prompt: str):
         return None, f'OpenAI image request failed: {e}'
 
 
+def _default_music_plan():
+    return {
+        'bpm': 112,
+        'key': 'A',
+        'scale': 'minor',
+        'progression': [1, 6, 3, 7],
+        'swing': 0.06,
+        'bars': 4,
+        'melody_density': 0.55,
+        'style': 'tet_pop',
+        'seed': int(time.time()) % 1_000_000,
+    }
+
+
+def _coerce_music_plan(raw: dict | None):
+    plan = _default_music_plan()
+    if not isinstance(raw, dict):
+        return plan
+
+    def _clamp_int(v, lo, hi, default):
+        try:
+            n = int(v)
+            return max(lo, min(hi, n))
+        except Exception:
+            return default
+
+    def _clamp_float(v, lo, hi, default):
+        try:
+            n = float(v)
+            return max(lo, min(hi, n))
+        except Exception:
+            return default
+
+    bpm = _clamp_int(raw.get('bpm'), 70, 160, plan['bpm'])
+    key = str(raw.get('key') or plan['key']).strip().upper()
+    if key not in {'C','C#','DB','D','D#','EB','E','F','F#','GB','G','G#','AB','A','A#','BB','B'}:
+        key = plan['key']
+
+    scale = str(raw.get('scale') or plan['scale']).strip().lower()
+    if scale not in {'major', 'minor', 'pentatonic'}:
+        scale = plan['scale']
+
+    prog = raw.get('progression')
+    if isinstance(prog, list):
+        degrees = []
+        for x in prog[:8]:
+            try:
+                d = int(x)
+            except Exception:
+                continue
+            if 1 <= d <= 7:
+                degrees.append(d)
+        if len(degrees) >= 2:
+            plan['progression'] = degrees
+
+    plan['bpm'] = bpm
+    plan['key'] = key
+    plan['scale'] = scale
+    plan['swing'] = _clamp_float(raw.get('swing'), 0.0, 0.22, plan['swing'])
+    plan['bars'] = _clamp_int(raw.get('bars'), 2, 8, plan['bars'])
+    plan['melody_density'] = _clamp_float(raw.get('melody_density'), 0.15, 0.95, plan['melody_density'])
+    plan['style'] = str(raw.get('style') or plan['style']).strip().lower()[:32] or plan['style']
+    plan['seed'] = _clamp_int(raw.get('seed'), 0, 9_999_999, plan['seed'])
+
+    return plan
+
+
+def _generate_music_plan_with_openai(prompt: str):
+    """Generate a compact 'music plan' (BPM/key/progression/pattern hints) for client-side WebAudio synthesis.
+
+    This avoids saving audio on the server and enables real beat/melody/bass.
+    """
+    client, err = _get_openai_client()
+    if err:
+        return None, err
+
+    text_model = os.environ.get('OPENAI_TEXT_MODEL', 'gpt-4o-mini')
+    system = (
+        'You are a music director for short upbeat Vietnamese New Year (Tết) instrumentals. '
+        'Return ONLY valid JSON. No markdown. No explanations.\n'
+        'Schema:\n'
+        '{"bpm": int 70-160, "key": "C|C#|Db|D|D#|Eb|E|F|F#|Gb|G|G#|Ab|A|A#|Bb|B", '
+        '"scale": "major|minor|pentatonic", "progression": [int degree 1-7], '
+        '"swing": float 0-0.22, "bars": int 2-8, "melody_density": float 0.15-0.95, '
+        '"style": "tet_pop|tet_hiphop|tet_house|lofi|traditional", "seed": int }\n'
+        'Make it catchy with strong kick + bass + simple melody. '
+        'If user asks for a vibe (happy/modern/traditional), reflect in bpm/scale/style.'
+    )
+
+    # Ask model for JSON plan; parse, validate, and coerce.
+    try:
+        text = None
+        try:
+            resp = client.responses.create(
+                model=text_model,
+                input=[
+                    {'role': 'system', 'content': [{'type': 'text', 'text': system}]},
+                    {'role': 'user', 'content': [{'type': 'text', 'text': (prompt or '').strip()}]},
+                ],
+                temperature=0.5,
+            )
+            text = getattr(resp, 'output_text', None)
+        except Exception:
+            text = None
+
+        if not text:
+            chat = client.chat.completions.create(
+                model=text_model,
+                messages=[
+                    {'role': 'system', 'content': system},
+                    {'role': 'user', 'content': (prompt or '').strip()},
+                ],
+                temperature=0.5,
+            )
+            text = (chat.choices[0].message.content or '').strip()
+
+        text = (text or '').strip()
+        if not text:
+            return None, 'OpenAI music plan generation returned empty result'
+
+        raw = None
+        try:
+            raw = json.loads(text)
+        except Exception:
+            raw = None
+
+        plan = _coerce_music_plan(raw if isinstance(raw, dict) else None)
+        return {
+            'kind': 'webaudio_plan',
+            'provider': 'openai',
+            'model': text_model,
+            'plan': plan,
+        }, None
+    except Exception as e:
+        return None, f'OpenAI music plan generation failed: {e}'
+
+
 def _should_translate_to_english(text: str) -> bool:
     # Heuristic: if any non-ASCII character exists, assume non-English.
     return any(ord(ch) > 127 for ch in (text or ''))
@@ -204,6 +386,398 @@ def _get_stability_api_key():
     return (
         os.environ.get('STABILITY_API_KEY')
         or os.environ.get('STABILITY_KEY')
+    )
+
+
+def _get_suno_api_key():
+    return (
+        os.environ.get('SUNO_API_KEY')
+        or os.environ.get('SUNO_KEY')
+        or os.environ.get('KIE_API_KEY')
+        or os.environ.get('KIE_KEY')
+        or os.environ.get('MUSIC_API_KEY')
+    )
+
+
+def _get_suno_base_url():
+    return (
+        os.environ.get('SUNO_BASE_URL')
+        or os.environ.get('SUNO_API_BASE_URL')
+        or os.environ.get('KIE_BASE_URL')
+        or os.environ.get('KIE_API_BASE_URL')
+        or os.environ.get('MUSIC_BASE_URL')
+        or ''
+    ).strip().rstrip('/')
+
+
+LYRICS_WORD_LIMIT = 300
+
+
+def _trim_to_max_words(text: str, max_words: int = LYRICS_WORD_LIMIT) -> str:
+    if not text:
+        return ''
+
+    count = 0
+    lines = text.replace('\r\n', '\n').replace('\r', '\n').split('\n')
+    out: list[str] = []
+
+    for ln in lines:
+        raw = (ln or '').strip()
+        if not raw:
+            if out and out[-1] != '':
+                out.append('')
+            continue
+
+        words = re.findall(r'\S+', raw)
+        if not words:
+            continue
+
+        if count + len(words) <= max_words:
+            out.append(raw)
+            count += len(words)
+            continue
+
+        remaining = max_words - count
+        if remaining <= 0:
+            break
+
+        out.append(' '.join(words[:remaining]))
+        count = max_words
+        break
+
+    while out and out[0] == '':
+        out.pop(0)
+    while out and out[-1] == '':
+        out.pop()
+
+    return ('\n'.join(out)).strip()
+
+
+def _generate_lyrics_with_openai(prompt: str, length: str | None = None, note: str | None = None):
+    """Generate/Remake Vietnamese lyrics for Suno.
+
+    This is text-only (no TTS). Keep it short so Suno can render quickly.
+    """
+    client, err = _get_openai_client()
+    if err:
+        return None, err
+
+    text_model = os.environ.get('OPENAI_TEXT_MODEL', 'gpt-4o-mini')
+    # Keep lyrics short enough for fast music generation and predictable UX.
+    # "200 chữ" is interpreted as ~200 whitespace-delimited words.
+    max_words = 200
+
+    length_key = (length or 'same').strip().lower()
+    if length_key not in ('shorter', 'same', 'longer'):
+        length_key = 'same'
+
+    length_rule = {
+        'shorter': '6–8 dòng',
+        'same': '8–12 dòng',
+        'longer': '14–20 dòng',
+    }[length_key]
+
+    user_note = (note or '').strip()
+
+    system = (
+        'Bạn là nhạc sĩ/thi sĩ tiếng Việt. Hãy viết (hoặc viết lại) LỜI BÀI HÁT chúc Tết để AI tạo nhạc. '
+        f'Yêu cầu: {length_rule}; có nhịp; câu ngắn; dễ hát; tránh ký tự lạ; hạn chế emoji; không tiêu đề; không giải thích. '
+        f'Tối đa {max_words} từ. '
+        'Nếu người dùng nêu người nhận/tông giọng/từ khóa thì lồng ghép khéo léo. '
+        + (f'Chú thích của người dùng (ưu tiên làm theo): {user_note}' if user_note else '')
+    )
+
+    user_prompt = (prompt or '').strip()
+    if user_note:
+        user_prompt = f"Đề bài / lời gốc:\n{user_prompt}\n\nChú thích:\n{user_note}".strip()
+
+    try:
+        lyrics = None
+        try:
+            resp = client.responses.create(
+                model=text_model,
+                input=[
+                    {'role': 'system', 'content': [{'type': 'text', 'text': system}]},
+                    {'role': 'user', 'content': [{'type': 'text', 'text': user_prompt}]},
+                ],
+                temperature=0.8,
+            )
+            lyrics = getattr(resp, 'output_text', None)
+        except Exception:
+            lyrics = None
+
+        if not lyrics:
+            chat = client.chat.completions.create(
+                model=text_model,
+                messages=[
+                    {'role': 'system', 'content': system},
+                    {'role': 'user', 'content': user_prompt},
+                ],
+                temperature=0.8,
+            )
+            lyrics = (chat.choices[0].message.content or '').strip()
+
+        lyrics = (lyrics or '').strip()
+        lyrics = _trim_to_max_words(lyrics, max_words)
+        if not lyrics:
+            return None, 'OpenAI lyrics generation returned empty result'
+        return {
+            'lyrics': lyrics,
+            'provider': 'openai',
+            'model': text_model,
+        }, None
+    except Exception as e:
+        return None, f'OpenAI lyrics generation failed: {e}'
+
+
+def _call_suno_generate(prompt: str, lyrics: str | None = None, extra_fields: dict | None = None):
+    """Call a Suno API provider (3rd-party) to generate a track.
+
+    IMPORTANT: Suno API providers differ in endpoint paths, auth, and response schema.
+    Configure via env vars:
+      - SUNO_BASE_URL (required)
+      - SUNO_API_KEY (optional depending on provider)
+      - SUNO_GENERATE_PATH (required) e.g. /generate
+      - SUNO_STATUS_PATH (optional) e.g. /status/{id}
+    The code expects the generate response to return either:
+      - {"audio_url": "https://...mp3"}
+      - or {"id": "..."} and then status endpoint returns {"audio_url": "..."}
+    """
+    base = _get_suno_base_url()
+    if not base:
+        return None, 'Missing SUNO_BASE_URL (or SUNO_API_BASE_URL)'
+
+    generate_path = (os.environ.get('SUNO_GENERATE_PATH') or '').strip()
+    if not generate_path:
+        return None, 'Missing SUNO_GENERATE_PATH (provider-specific)'
+
+    status_path = (os.environ.get('SUNO_STATUS_PATH') or '').strip()
+    api_key = _get_suno_api_key()
+
+    try:
+        import requests  # type: ignore
+    except Exception as e:
+        return None, f'Requests not installed: {e}'
+
+    url = f'{base}{generate_path if generate_path.startswith("/") else "/" + generate_path}'
+
+    prompt_field = (os.environ.get('SUNO_PROMPT_FIELD') or 'prompt').strip() or 'prompt'
+    lyrics_field = (os.environ.get('SUNO_LYRICS_FIELD') or 'lyrics').strip() or 'lyrics'
+
+    payload: dict = {
+        prompt_field: (prompt or '').strip(),
+    }
+    if lyrics:
+        payload[lyrics_field] = lyrics
+
+    if isinstance(extra_fields, dict) and extra_fields:
+        # Only merge JSON-serializable primitives/structures
+        try:
+            json.dumps(extra_fields)
+            payload.update(extra_fields)
+        except Exception:
+            pass
+
+    def _env_bool(name: str, default: bool | None = None) -> bool | None:
+        raw = os.environ.get(name)
+        if raw is None:
+            return default
+        s = str(raw).strip().lower()
+        if s in {'1', 'true', 'yes', 'y', 'on'}:
+            return True
+        if s in {'0', 'false', 'no', 'n', 'off'}:
+            return False
+        return default
+
+    # Kie.ai Suno API requirements: model + callBackUrl are required, tasks are async (taskId).
+    is_kie = 'kie.ai' in base.lower()
+    if is_kie:
+        # Allow request to pass either snake_case or camelCase.
+        if 'custom_mode' in payload and 'customMode' not in payload:
+            payload['customMode'] = bool(payload.get('custom_mode'))
+        if 'instrumental' in payload:
+            payload['instrumental'] = bool(payload.get('instrumental'))
+
+        payload.setdefault('model', (os.environ.get('SUNO_MODEL') or os.environ.get('KIE_MODEL') or 'V4_5PLUS').strip())
+        payload.setdefault('customMode', bool(_env_bool('SUNO_CUSTOM_MODE', False)))
+        payload.setdefault('instrumental', bool(_env_bool('SUNO_INSTRUMENTAL', True)))
+
+        callback_url = (
+            os.environ.get('SUNO_CALLBACK_URL')
+            or os.environ.get('KIE_CALLBACK_URL')
+            or ''
+        ).strip()
+        if not callback_url:
+            return None, 'Missing SUNO_CALLBACK_URL (required by Kie.ai Suno API)'
+        payload.setdefault('callBackUrl', callback_url)
+
+    extra_json = (os.environ.get('SUNO_EXTRA_JSON') or '').strip()
+    if extra_json:
+        try:
+            extra_obj = json.loads(extra_json)
+            if isinstance(extra_obj, dict):
+                payload.update(extra_obj)
+        except Exception:
+            # Ignore malformed extra json
+            pass
+
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    # Try common auth patterns; providers vary.
+    if api_key:
+        headers.setdefault('Authorization', f'Bearer {api_key}')
+        headers.setdefault('X-API-Key', api_key)
+
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=120)
+    except Exception as e:
+        return None, f'Network error calling Suno provider: {e}'
+
+    if r.status_code >= 400:
+        body = (r.text or '').strip()
+        snippet = body[:800] if body else '(empty body)'
+        return None, f'Suno generate failed: {r.status_code} - {snippet}'
+
+    # Parse JSON (some providers return list at top-level)
+    try:
+        data = r.json() if r.content else {}
+    except Exception:
+        body = (r.text or '').strip()
+        snippet = body[:800] if body else '(empty body)'
+        return None, f'Suno generate did not return valid JSON: {snippet}'
+
+    def _as_str(x):
+        return x.strip() if isinstance(x, str) and x.strip() else None
+
+    def _find_first(obj, wanted_keys: set[str]):
+        """Depth-first search for first matching key in dict/list structures."""
+        if isinstance(obj, dict):
+            for k in wanted_keys:
+                if k in obj:
+                    v = obj.get(k)
+                    if v is not None:
+                        return v
+            for v in obj.values():
+                found = _find_first(v, wanted_keys)
+                if found is not None:
+                    return found
+        elif isinstance(obj, list):
+            for item in obj:
+                found = _find_first(item, wanted_keys)
+                if found is not None:
+                    return found
+        return None
+
+    def _find_audio_url(obj):
+        # Prefer explicit audio keys first
+        v = _find_first(obj, {
+            'audio_url', 'audioUrl', 'audio', 'audioSrc', 'audio_src', 'mp3_url', 'mp3Url',
+            'track_url', 'trackUrl', 'song_url', 'songUrl',
+        })
+        s = _as_str(v)
+        if s:
+            return s
+
+        # Fallback: look for any URL-ish string in common containers
+        v2 = _find_first(obj, {'url', 'file', 'file_url', 'fileUrl'})
+        s2 = _as_str(v2)
+        if s2 and any(ext in s2.lower() for ext in ('.mp3', '.wav', '.m4a', '.aac', '.ogg')):
+            return s2
+        return None
+
+    def _find_job_id(obj):
+        v = _find_first(obj, {
+            'id', 'job_id', 'jobId', 'task_id', 'taskId', 'record_id', 'recordId',
+            'song_id', 'songId', 'uuid'
+        })
+        return _as_str(v)
+
+    # Surface provider-side errors even if HTTP 200
+    if isinstance(data, dict):
+        code = data.get('code')
+        status = data.get('status')
+        okish = str(status).lower() in {'success', 'ok', 'succeeded'}
+        if (isinstance(code, int) and code not in (0, 200)) or (status is not None and not okish):
+            msg = data.get('message') or data.get('msg') or data.get('error')
+            if msg:
+                return None, f'Suno provider error: {msg}'
+
+        if data.get('error') and not data.get('audio_url'):
+            return None, f"Suno provider error: {data.get('error')}"
+
+    audio_url = _find_audio_url(data)
+    if audio_url:
+        return {
+            'audio_url': audio_url,
+            'provider': 'suno',
+        }, None
+
+    job_id = _find_job_id(data)
+    if not job_id:
+        # Provide a helpful hint (keys + snippet) for mapping this provider
+        body = (r.text or '').strip()
+        snippet = body[:800] if body else '(empty body)'
+        keys = list(data.keys())[:40] if isinstance(data, dict) else []
+        return None, f'Suno provider did not return audio_url or job id. keys={keys} body={snippet}'
+
+    if not status_path:
+        return None, 'Suno provider returned a job id but SUNO_STATUS_PATH is not configured'
+
+    # Poll status
+    # Kie.ai tasks can take longer than generic Suno providers.
+    max_wait_raw = (os.environ.get('SUNO_MAX_WAIT_SECONDS') or '').strip()
+    if max_wait_raw:
+        max_wait_s = int(max_wait_raw)
+    else:
+        max_wait_s = 420 if is_kie else 180
+
+    poll_every_raw = (os.environ.get('SUNO_POLL_SECONDS') or '').strip()
+    if poll_every_raw:
+        poll_every_s = float(poll_every_raw)
+    else:
+        poll_every_s = 3.0 if is_kie else 2.0
+    deadline = time.time() + max(10, min(max_wait_s, 600))
+
+    status_url = status_path.replace('{id}', str(job_id).strip())
+    status_url = f'{base}{status_url if status_url.startswith("/") else "/" + status_url}'
+
+    while time.time() < deadline:
+        try:
+            rs = requests.get(status_url, headers=headers, timeout=60)
+        except Exception as e:
+            return None, f'Network error polling Suno status: {e}'
+
+        if rs.status_code >= 400:
+            body = (rs.text or '').strip()
+            snippet = body[:800] if body else '(empty body)'
+            return None, f'Suno status failed: {rs.status_code} - {snippet}'
+
+        try:
+            sd = rs.json() if rs.content else {}
+        except Exception:
+            body = (rs.text or '').strip()
+            snippet = body[:800] if body else '(empty body)'
+            return None, f'Suno status did not return valid JSON: {snippet}'
+
+        audio_url = _find_audio_url(sd)
+        if audio_url:
+            return {
+                'audio_url': audio_url,
+                'provider': 'suno',
+                'job_id': str(job_id).strip(),
+            }, None
+
+        if isinstance(sd, dict):
+            state = (sd.get('status') or sd.get('state') or '').lower()
+            if state in {'failed', 'error'}:
+                return None, f'Suno job failed: {sd}'
+
+        time.sleep(poll_every_s)
+
+    return None, (
+        f'Suno job timed out waiting for audio_url (job_id={str(job_id).strip()}). '
+        'Try increasing SUNO_MAX_WAIT_SECONDS (max 600) or check provider status endpoint.'
     )
 
 
@@ -658,6 +1232,14 @@ def api_generate_poem():
     if not prompt:
         return jsonify({'status': 'error', 'error': 'Missing prompt'}), 400
 
+    trimmed_prompt = _trim_to_max_words(prompt)
+    prompt_truncated = trimmed_prompt != prompt
+    prompt = trimmed_prompt
+
+    trimmed_prompt = _trim_to_max_words(prompt)
+    prompt_truncated = trimmed_prompt != prompt
+    prompt = trimmed_prompt
+
     if _looks_off_topic(prompt):
         return (
             jsonify(
@@ -750,6 +1332,71 @@ def api_generate_image():
     if err:
         return jsonify({'status': 'error', 'error': err}), 500
     return jsonify({'status': 'success', **(payload or {})})
+
+
+@app.route('/api/generate-music', methods=['POST'])
+def api_generate_music():
+    """API: Generate music via Suno provider. Optionally remake lyrics via OpenAI before sending."""
+    data = request.get_json(silent=True) or {}
+    prompt = (data.get('prompt') or '').strip()
+    if not prompt:
+        return jsonify({'status': 'error', 'error': 'Missing prompt'}), 400
+
+    trimmed_prompt = _trim_to_max_words(prompt)
+    prompt_truncated = trimmed_prompt != prompt
+    prompt = trimmed_prompt
+
+    # Optional per-request provider fields (Kie.ai Suno API custom mode)
+    title = (data.get('title') or '').strip() or None
+    style = (data.get('style') or '').strip() or None
+    model = (data.get('model') or '').strip() or None
+    custom_mode = data.get('custom_mode')
+    instrumental = data.get('instrumental')
+
+    remake_lyrics = bool(data.get('remake_lyrics'))
+    remake_length = (data.get('remake_length') or '').strip() or None
+    remake_note = (data.get('remake_note') or '').strip() or None
+    lyrics = (data.get('lyrics') or '').strip() or None
+
+    remix = None
+    if remake_lyrics:
+        remix, err = _generate_lyrics_with_openai(prompt, length=remake_length, note=remake_note)
+        if err:
+            return jsonify({'status': 'error', 'error': err}), 500
+        lyrics = (remix or {}).get('lyrics') or lyrics
+
+    # In Kie custom mode, we often treat prompt as exact lyrics. If user remade lyrics,
+    # use that as the prompt too (so the sung lyrics match the remade version).
+    prompt_to_provider = lyrics or prompt
+
+    extra_fields: dict = {}
+    if title:
+        extra_fields['title'] = title
+    if style:
+        extra_fields['style'] = style
+    if model:
+        extra_fields['model'] = model
+    if custom_mode is not None:
+        extra_fields['custom_mode'] = bool(custom_mode)
+    if instrumental is not None:
+        extra_fields['instrumental'] = bool(instrumental)
+
+    music, err = _call_suno_generate(prompt=prompt_to_provider, lyrics=lyrics, extra_fields=extra_fields)
+    if err:
+        return jsonify({'status': 'error', 'error': err}), 500
+
+    resp = {
+        **(music or {}),
+        'remake_lyrics': remake_lyrics,
+        'prompt_truncated': prompt_truncated,
+    }
+    if lyrics:
+        resp['lyrics'] = lyrics
+    if remix and isinstance(remix, dict):
+        resp['lyrics_provider'] = remix.get('provider')
+        resp['lyrics_model'] = remix.get('model')
+
+    return jsonify({'status': 'success', **resp})
 
 
 # =============================================

@@ -1199,13 +1199,14 @@
     <div class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="/" aria-label="Về trang chủ">
-                <span class="brand-mark"><img src="/static/logo/android-chrome-192x192.png" alt="Sắc Xuân AI" /></span>
+                <span class="brand-mark"><img src="/static/logo/android-chrome-192x192.png" alt="SpringMuse" /></span>
                 <span>Sắc</span> Xuân AI
             </a>
             <nav class="nav" aria-label="Điều hướng">
                 <a href="/">Trang chủ</a>
                 <a href="/main">Tạo thơ</a>
                 <a href="/image">Tạo ảnh</a>
+                <a href="/music">Tạo nhạc</a>
             </nav>
 
             <button class="menu-toggle" id="menuToggle" type="button" aria-label="Mở menu" aria-expanded="false" aria-controls="mobileNav">
@@ -1217,6 +1218,7 @@
             <a href="/">Trang chủ <i class="fa-solid fa-house" aria-hidden="true"></i></a>
             <a href="/main">Tạo thơ <i class="fa-solid fa-pen-nib" aria-hidden="true"></i></a>
             <a href="/image">Tạo ảnh <i class="fa-regular fa-image" aria-hidden="true"></i></a>
+            <a href="/music">Tạo nhạc <i class="fa-solid fa-music" aria-hidden="true"></i></a>
         </div>
     </div>
 
@@ -1297,32 +1299,32 @@
         <section class="section" id="ve-du-an">
             <div class="section-header reveal" style="--d: 0ms;">
                 <div>
-                    <h2 class="section-title">Về dự án</h2>
-                    <p class="section-subtitle">Một trải nghiệm nhỏ gọn, nhưng chỉn chu — ưu tiên dễ dùng, dễ đọc và cảm giác “Tết” hiện đại.</p>
+                    <h2 class="section-title">Hướng dẫn</h2>
+                    <p class="section-subtitle">Nhập prompt → bấm tạo → copy hoặc tải xuống. Hỗ trợ cả tạo thơ và tạo ảnh chúc Tết.</p>
                 </div>
             </div>
             <div class="section-rule" aria-hidden="true"></div>
 
             <div class="features" style="padding-bottom: 0;">
                 <div class="feature-card reveal" style="--d: 80ms; text-align: left;">
-                    <div class="feature-icon"><i class="fa-solid fa-hand-sparkles" aria-hidden="true"></i></div>
+                    <div class="feature-icon"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></div>
                     <div class="feature-content">
-                        <h3 class="feature-title">Trải nghiệm gọn gàng</h3>
-                        <p class="feature-desc">Tập trung vào phần tạo thơ: form rõ ràng, kết quả sạch, dễ copy.</p>
+                        <h3 class="feature-title">1) Tạo thơ</h3>
+                        <p class="feature-desc">Vào trang “Tạo thơ”, nhập người nhận + tông giọng + từ khoá (an khang, tài lộc…), rồi bấm tạo và copy gửi ngay.</p>
                     </div>
                 </div>
                 <div class="feature-card reveal" style="--d: 140ms; text-align: left;">
-                    <div class="feature-icon"><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i></div>
+                    <div class="feature-icon"><i class="fa-regular fa-image" aria-hidden="true"></i></div>
                     <div class="feature-content">
-                        <h3 class="feature-title">Responsive “đúng nghĩa”</h3>
-                        <p class="feature-desc">Bố cục tự co giãn theo màn hình, tối ưu iPad và mobile, thuận mắt như web chuyên nghiệp.</p>
+                        <h3 class="feature-title">2) Tạo ảnh</h3>
+                        <p class="feature-desc">Vào trang “Tạo ảnh”, nhập chủ thể + bối cảnh + phong cách (poster/vector/cổ phong…), rồi bấm tạo và tải ảnh về.</p>
                     </div>
                 </div>
                 <div class="feature-card reveal" style="--d: 200ms; text-align: left;">
-                    <div class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></div>
+                    <div class="feature-icon"><i class="fa-solid fa-copy" aria-hidden="true"></i></div>
                     <div class="feature-content">
-                        <h3 class="feature-title">Hiệu ứng cuộn tinh tế</h3>
-                        <p class="feature-desc">Reveal khi lướt xuống (nhẹ, chuyên nghiệp). Tự tắt nếu người dùng bật “Reduce Motion”.</p>
+                        <h3 class="feature-title">3) Copy & chia sẻ</h3>
+                        <p class="feature-desc">Với thơ: copy một chạm. Với ảnh: tải xuống rồi đăng mạng xã hội hoặc gửi lời chúc kèm hình minh hoạ.</p>
                     </div>
                 </div>
             </div>
@@ -1333,15 +1335,15 @@
         <div class="footer-inner">
             <div>
                 <div class="footer-brand">Sắc <span>Xuân</span> AI</div>
-                <p class="footer-text">AI tạo thơ chúc Tết — gọn, dễ nhìn, tối ưu cho mọi thiết bị.</p>
+                <p class="footer-text">AI tạo thơ, ảnh & audio chúc Tết — gọn, dễ nhìn, tối ưu cho mọi thiết bị.</p>
             </div>
             <div>
                 <div class="footer-title">Điều hướng</div>
                 <div class="footer-links">
-                    <a href="#trai-nghiem"><i class="fa-solid fa-circle-chevron-up" aria-hidden="true"></i>Trải nghiệm</a>
-                    <a href="#tinh-nang"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Cách hoạt động</a>
-                    <a href="/main"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo thơ</a>
+                    <a href="/"><i class="fa-solid fa-house" aria-hidden="true"></i>Trang chủ</a>
+                    <a href="/main"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i>Tạo thơ</a>
                     <a href="/image"><i class="fa-regular fa-image" aria-hidden="true"></i>Tạo ảnh</a>
+                    <a href="/music"><i class="fa-solid fa-music" aria-hidden="true"></i>Tạo nhạc</a>
                 </div>
             </div>
             <div>

@@ -1,16 +1,22 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sắc Xuân AI - AI Tạo Thơ Chúc Tết</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/logo/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/logo/favicon-16x16.png">
-    <link rel="icon" href="/static/logo/favicon.ico">
-    <link rel="manifest" href="/static/logo/site.webmanifest">
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sắc Xuân AI — Tạo nhạc</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/logo/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/logo/favicon-16x16.png" />
+    <link rel="icon" href="/static/logo/favicon.ico" />
+    <link rel="manifest" href="/static/logo/site.webmanifest" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
+
     <style>
         :root {
             --red-deep: #8B0000;
@@ -35,33 +41,18 @@
             font-display: swap;
         }
 
-        html { scroll-behavior: smooth; }
-
-        body {
+        html, body {
             margin: 0;
-            font-family: 'Be Vietnam Pro', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            padding: 0;
+            height: 100%;
+            font-family: "Be Vietnam Pro", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
             color: var(--text-dark);
             background: linear-gradient(135deg, var(--beige) 0%, var(--white) 55%, var(--gold-light) 100%);
-            min-height: 100vh;
             overflow-x: hidden;
+            scroll-behavior: smooth;
         }
 
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-        }
-
-        img,
-        svg,
-        video,
-        canvas {
-            max-width: 100%;
-        }
-
-        canvas {
-            display: block;
-        }
+        img, svg, video, canvas { max-width: 100%; }
 
         body::before {
             content: '';
@@ -110,6 +101,21 @@
             right: max(24px, 2.5vw);
         }
 
+        .menu-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(45, 24, 16, 0.22);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 160ms ease;
+            z-index: 180;
+        }
+
+        body.menu-open .menu-backdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         a { color: inherit; text-decoration: none; }
 
         .page-wrapper {
@@ -129,18 +135,6 @@
         .content {
             max-width: 1100px;
             margin: 0 auto;
-        }
-
-        .reveal {
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 600ms ease, transform 600ms ease;
-            transition-delay: var(--d, 0ms);
-        }
-
-        .reveal.in-view {
-            opacity: 1;
-            transform: translateY(0);
         }
 
         .topbar {
@@ -164,6 +158,7 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
+            text-decoration: none;
             color: var(--red-deep);
             font-weight: 850;
             letter-spacing: 0.2px;
@@ -176,12 +171,12 @@
             width: 34px;
             height: 34px;
             border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(212, 175, 55, 0.55);
-            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.95), rgba(212, 175, 55, 0.35));
-            box-shadow: 0 10px 30px rgba(139, 0, 0, 0.08);
             display: grid;
             place-items: center;
+            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.95), rgba(212, 175, 55, 0.35));
+            border: 1px solid rgba(212, 175, 55, 0.55);
+            box-shadow: 0 10px 30px rgba(139, 0, 0, 0.08);
+            overflow: hidden;
         }
 
         .brand-mark img {
@@ -237,36 +232,20 @@
             transform: translateY(-1px);
         }
 
-        .menu-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(45, 24, 16, 0.22);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 160ms ease;
-            z-index: 180;
-        }
-
-        body.menu-open .menu-backdrop {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
         .mobile-nav {
             display: none;
         }
 
-        .mobile-nav a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 12px 12px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: rgba(254, 254, 250, 0.86);
-            font-weight: 750;
-            color: rgba(45, 24, 16, 0.86);
+        .reveal {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 600ms ease, transform 600ms ease;
+            transition-delay: var(--d, 0ms);
+        }
+
+        .reveal.in-view {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .hero {
@@ -297,8 +276,6 @@
             font-weight: 900;
         }
 
-        .h1 .highlight { color: var(--gold); }
-
         .lead {
             margin: 0 auto;
             max-width: 760px;
@@ -315,21 +292,19 @@
         }
 
         .grid {
-            padding: 18px 0 8px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             align-items: start;
+            padding: 18px 0 8px;
         }
 
-        .grid > * {
-            min-width: 0;
-        }
+        .grid > * { min-width: 0; }
 
         .card {
-            border-radius: var(--radius);
             background: var(--card);
             border: 1px solid var(--border);
+            border-radius: var(--radius);
             box-shadow: var(--shadow);
             padding: 18px;
         }
@@ -369,41 +344,47 @@
             border: 1px solid rgba(212, 175, 55, 0.30);
             background: rgba(254, 254, 250, 0.92);
             color: var(--text-dark);
-            outline: none;
             font-family: inherit;
+            outline: none;
             line-height: 1.55;
             min-height: 112px;
             resize: vertical;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        textarea:focus {
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.30);
+            background: rgba(254, 254, 250, 0.92);
+            color: var(--text-dark);
+            font-family: inherit;
+            outline: none;
+            line-height: 1.2;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
             border-color: rgba(212, 175, 55, 0.55);
             box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
         }
 
-        .chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
+        select {
+            appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, rgba(45, 24, 16, 0.55) 50%),
+                              linear-gradient(135deg, rgba(45, 24, 16, 0.55) 50%, transparent 50%);
+            background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 12px) calc(50% - 3px);
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            padding-right: 34px;
         }
 
-        .chip {
-            user-select: none;
-            cursor: pointer;
-            padding: 8px 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(212, 175, 55, 0.24);
-            background: rgba(212, 175, 55, 0.10);
-            color: rgba(45, 24, 16, 0.88);
-            font-size: 13px;
-            font-weight: 650;
-        }
-
-        .chip:hover {
-            border-color: rgba(212, 175, 55, 0.42);
-            background: rgba(212, 175, 55, 0.14);
+        textarea:focus {
+            border-color: rgba(212, 175, 55, 0.55);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
         }
 
         .actions {
@@ -429,14 +410,30 @@
         }
 
         .btn:hover {
+            transform: translateY(-1px);
             border-color: rgba(212, 175, 55, 0.44);
             background: rgba(212, 175, 55, 0.12);
-            transform: translateY(-1px);
         }
 
         .btn-primary {
             border-color: rgba(212, 175, 55, 0.50);
             background: linear-gradient(135deg, rgba(212,175,55,0.22), rgba(139,0,0,0.08));
+        }
+
+        .btn-danger {
+            border-color: rgba(139, 0, 0, 0.20);
+            background: rgba(139, 0, 0, 0.06);
+        }
+
+        .btn.is-disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .status {
@@ -464,19 +461,19 @@
             font-weight: 850;
         }
 
-        .toggle {
+        .lyrics-counter {
+            margin-top: 6px;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(57, 88, 34, 0.92);
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            font-weight: 750;
-            color: rgba(45, 24, 16, 0.82);
+            gap: 4px;
         }
 
-        .toggle input {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--red-deep);
+        .lyrics-counter.is-over {
+            color: var(--red-deep);
         }
 
         .meta-row {
@@ -487,6 +484,14 @@
             flex-wrap: wrap;
             color: var(--text-muted);
             font-size: 13px;
+        }
+
+        .audio-box {
+            margin-top: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(212, 175, 55, 0.22);
+            background: rgba(254, 254, 250, 0.66);
+            padding: 14px 14px;
         }
 
         .poem-box {
@@ -506,10 +511,8 @@
             color: rgba(45, 24, 16, 0.92);
         }
 
-        .poem-text.calligraphy {
-            font-family: 'TetCouplet', 'Be Vietnam Pro', sans-serif;
-            font-size: 1.14rem;
-            letter-spacing: 0.2px;
+        audio {
+            width: 100%;
         }
 
         .footer {
@@ -537,9 +540,7 @@
             margin-bottom: 8px;
         }
 
-        .footer-brand span {
-            color: var(--gold);
-        }
+        .footer-brand span { color: var(--gold); }
 
         .footer-text {
             opacity: 0.82;
@@ -573,9 +574,7 @@
             transform: translateX(2px);
         }
 
-        .footer-links i {
-            color: var(--gold);
-        }
+        .footer-links i { color: var(--gold); }
 
         .footer-bottom {
             max-width: 1400px;
@@ -616,26 +615,8 @@
         }
 
         @media (max-width: 1024px) {
-            .watermark::before,
-            .watermark::after {
-                width: min(420px, 42vw);
-                height: min(420px, 42vw);
-            }
-
-            .watermark::before {
-                left: max(16px, 1.8vw);
-            }
-
-            .watermark::after {
-                right: max(16px, 1.8vw);
-            }
-        }
-
-        @media (max-width: 920px) {
-            .grid { grid-template-columns: 1fr; }
             .nav { display: none; }
             .menu-toggle { display: inline-flex; }
-
             .topbar .container { position: relative; }
 
             .mobile-nav {
@@ -665,21 +646,30 @@
                 transform: translate3d(0, 0, 0);
                 pointer-events: auto;
             }
+
+            .mobile-nav a {
+                display: inline-flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 12px 12px;
+                border-radius: 14px;
+                border: 1px solid rgba(212, 175, 55, 0.26);
+                background: rgba(254, 254, 250, 0.86);
+                font-weight: 750;
+                color: rgba(45, 24, 16, 0.86);
+                text-decoration: none;
+            }
+
+            .footer-inner { grid-template-columns: 1fr; }
+            .grid { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 520px) {
             .actions { flex-direction: column; }
-            .btn { width: 100%; justify-content: center; }
+            .btn { width: 100%; }
 
-            .topbar-inner {
-                min-width: 0;
-            }
-
-            .brand {
-                max-width: calc(100% - 56px);
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
+            .brand { max-width: calc(100% - 56px); overflow: hidden; text-overflow: ellipsis; }
 
             .watermark::before,
             .watermark::after {
@@ -691,20 +681,13 @@
 
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
-            .reveal { transition: none; transform: none; opacity: 1; }
-            .mobile-nav { transition: none; transform: none; }
-        }
-
-        @media (max-width: 1024px) {
-            .footer-inner {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
 <body>
     <div class="watermark" aria-hidden="true"></div>
     <div class="menu-backdrop" id="menuBackdrop" aria-hidden="true"></div>
+
     <div class="page-wrapper">
         <header class="topbar">
             <div class="container">
@@ -738,52 +721,83 @@
         <main>
             <section class="hero reveal" style="--d: 0ms;">
                 <div class="container content">
-                    <div class="kicker"><i class="fa-solid fa-microchip" aria-hidden="true"></i>Gọn đẹp, dễ copy để gửi ngay</div>
-                    <h1 class="h1"><span class="highlight">AI</span> tạo thơ chúc Tết</h1>
-                    <p class="lead">Nhập prompt theo ý bạn (người nhận, tông giọng, từ khoá, độ dài…). Bấm “Tạo thơ” để nhận bài thơ gọn gàng và dễ chia sẻ.</p>
+                    <div class="kicker"><i class="fa-solid fa-music" aria-hidden="true"></i>AI tạo audio chúc Tết</div>
+                    <h1 class="h1">Tạo “jingle/chant” ngắn để gửi lời chúc</h1>
+                    <p class="lead">Nhập <b>lời bài hát</b> (hoặc lời chúc dạng rap/chant). Chọn thể loại. Hệ thống sẽ tạo nhạc có vocal và xuất MP3 để bạn nghe thử và tải xuống.</p>
                     <div class="divider" aria-hidden="true"></div>
                 </div>
             </section>
 
             <section class="container">
                 <div class="grid content">
-                    <section class="card reveal" style="--d: 80ms;" id="tao-tho">
-                        <div class="card-title"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo thơ</div>
-                        <p class="card-subtitle">Mẹo: thêm “an khang”, “tài lộc”, “bình an”… để thơ đúng vibe Tết hơn.</p>
+                    <section class="card reveal" style="--d: 80ms;" id="tao-nhac">
+                        <div class="card-title"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo nhạc</div>
+                        <p class="card-subtitle">Mẹo: 8–12 dòng, câu ngắn dễ hát. Có thể ghi người nhận + từ khoá (an khang, tài lộc…).</p>
 
-                        <form id="poemForm" autocomplete="off">
-                            <label for="prompt">Prompt</label>
-                            <textarea id="prompt" name="prompt" placeholder="Ví dụ: Viết một bài thơ chúc Tết vui tươi cho bạn bè, nhắc tới an khang, tài lộc, sức khoẻ, độ dài 6 dòng."></textarea>
+                        <form id="musicForm" autocomplete="off">
+                            <label for="title">Tiêu đề</label>
+                            <input id="title" name="title" type="text" placeholder="Ví dụ: Sắc Xuân Tụ Hội" />
 
-                            <div class="chips" aria-label="Gợi ý prompt nhanh">
-                                <span class="chip" data-k="Viết thơ chúc Tết trang trọng cho sếp, 4 dòng, lịch sự.">Cho sếp</span>
-                                <span class="chip" data-k="Viết thơ chúc Tết dễ thương cho người yêu, 6 dòng, có chút lãng mạn.">Người yêu</span>
-                                <span class="chip" data-k="Viết thơ chúc Tết hài hước cho bạn bè, 4 dòng, vui vui.">Bạn bè</span>
-                                <span class="chip" data-k="Viết câu đối chúc Tết cổ phong, 2 câu, nhắc phúc lộc thọ.">Câu đối</span>
+                            <label for="style">Thể loại</label>
+                            <select id="style" name="style">
+                                <option value="Pop, Upbeat">Pop (vui tươi)</option>
+                                <option value="EDM, Festival, Upbeat">EDM (sôi động)</option>
+                                <option value="Hip-hop, Rap, Groove">Hip-hop/Rap</option>
+                                <option value="Lo-fi, Chill">Lo-fi (chill)</option>
+                                <option value="Ballad, Emotional">Ballad (tình cảm)</option>
+                                <option value="Traditional Vietnamese, Tet">Truyền thống (Tết)</option>
+                                <option value="Rock, Energetic">Rock</option>
+                            </select>
+
+                            <label for="prompt">Lời bài hát</label>
+                            <div class="lyrics-counter" id="lyricsCounter">
+                                <span id="lyricsCount">0</span>/300 từ
+                            </div>
+                            <textarea id="prompt" name="prompt" placeholder="Ví dụ (8–12 dòng):
+Xuân về rộn ràng khắp phố
+Mai vàng khoe sắc chờ ai
+... "></textarea>
+
+                            <label class="toggle" for="remakeLyrics" style="margin-top: 10px;">
+                                <input id="remakeLyrics" type="checkbox" />
+                                Remake lại lời
+                            </label>
+
+                            <div id="remakeOptions" style="display:none; margin-top: 10px;">
+                                <label for="remakeLength">Độ dài</label>
+                                <select id="remakeLength" name="remakeLength">
+                                    <option value="same" selected>Vừa (giữ gần như hiện tại)</option>
+                                    <option value="shorter">Ngắn hơn</option>
+                                    <option value="longer">Dài hơn</option>
+                                </select>
+
+                                <label for="remakeNote" style="margin-top: 10px;">Chú thích cho AI</label>
+                                <textarea id="remakeNote" name="remakeNote" placeholder="Ví dụ: Giữ đúng từ khóa ‘an khang tài lộc’, thêm 1 đoạn điệp khúc, tránh dùng từ quá sến…" style="min-height: 92px;"></textarea>
                             </div>
 
                             <div class="actions">
-                                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo thơ</button>
-                                <button class="btn" id="regen" type="button"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i>Tạo lại</button>
+                                <button class="btn btn-primary" id="btnGenerate" type="submit"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Tạo nhạc</button>
+                                <button class="btn" id="btnRestore" type="button"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>Khôi phục</button>
+                                <button class="btn btn-danger" id="btnClear" type="button"><i class="fa-solid fa-trash" aria-hidden="true"></i>Xoá</button>
                             </div>
 
                             <div class="status" id="status"></div>
-
-                            <label class="toggle" for="calligraphy">
-                                <input id="calligraphy" type="checkbox" />
-                                Chữ “thư pháp”
-                            </label>
                         </form>
                     </section>
 
                     <section class="card reveal" style="--d: 140ms;" id="ket-qua">
-                        <div class="card-title"><i class="fa-solid fa-feather-pointed" aria-hidden="true"></i>Kết quả</div>
+                        <div class="card-title"><i class="fa-solid fa-wave-square" aria-hidden="true"></i>Kết quả</div>
                         <div class="meta-row">
-                            <span>Bấm tạo thơ rồi copy để gửi.</span>
-                            <button class="btn" id="copy" type="button"><i class="fa-regular fa-copy" aria-hidden="true"></i>Copy</button>
+                            <span>Nghe thử rồi tải MP3.</span>
+                            <a class="btn is-disabled" id="btnDownload" href="#" download="sac-xuan-ai.mp3" aria-disabled="true"><i class="fa-solid fa-download" aria-hidden="true"></i>Tải MP3</a>
                         </div>
-                        <div class="poem-box">
-                            <pre id="poemText" class="poem-text">Nhấn “Tạo thơ” để bắt đầu.
+
+                        <div class="audio-box">
+                            <audio id="player" controls preload="metadata" style="width:100%;"></audio>
+                        </div>
+
+                        <div class="poem-box" aria-label="Thông tin bài nhạc">
+                            <pre id="lyricsText" class="poem-text">Nhấn “Tạo nhạc” để bắt đầu.
 Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
                         </div>
                     </section>
@@ -821,9 +835,11 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
             </div>
         </footer>
     </div>
+
     <script>
-        (function() {
-            document.getElementById('year').textContent = String(new Date().getFullYear());
+        (function () {
+            const yearEl = document.getElementById('year');
+            if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
             // Mobile menu toggle
             (function setupMobileMenu() {
@@ -857,7 +873,7 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
                 });
 
                 window.addEventListener('resize', () => {
-                    if (window.innerWidth > 920) setOpen(false);
+                    if (window.innerWidth > 1024) setOpen(false);
                 });
             })();
 
@@ -882,13 +898,36 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
                 items.forEach((el) => io.observe(el));
             })();
 
-            const form = document.getElementById('poemForm');
-            const poemText = document.getElementById('poemText');
-            const copyBtn = document.getElementById('copy');
-            const regenBtn = document.getElementById('regen');
-            const calligraphyToggle = document.getElementById('calligraphy');
             const promptEl = document.getElementById('prompt');
+            const titleEl = document.getElementById('title');
+            const styleEl = document.getElementById('style');
             const statusEl = document.getElementById('status');
+            const lyricsEl = document.getElementById('lyricsText');
+            const player = document.getElementById('player');
+            const btnGenerate = document.getElementById('btnGenerate');
+            const btnDownload = document.getElementById('btnDownload');
+            const btnRestore = document.getElementById('btnRestore');
+            const btnClear = document.getElementById('btnClear');
+            const form = document.getElementById('musicForm');
+
+            const lyricsCountEl = document.getElementById('lyricsCount');
+            const lyricsCounterEl = document.getElementById('lyricsCounter');
+            const LYRICS_WORD_LIMIT = 300;
+
+            const remakeLyricsEl = document.getElementById('remakeLyrics');
+            const remakeOptionsEl = document.getElementById('remakeOptions');
+            const remakeLengthEl = document.getElementById('remakeLength');
+            const remakeNoteEl = document.getElementById('remakeNote');
+
+            const STORAGE_KEY = 'sacxuanai_music_last_v4';
+
+            function fmtTime(seconds) {
+                const s = Number(seconds);
+                if (!isFinite(s) || s <= 0) return null;
+                const mm = Math.floor(s / 60);
+                const ss = Math.floor(s % 60);
+                return `${mm}:${String(ss).padStart(2, '0')}`;
+            }
 
             function setStatus(text, kind) {
                 statusEl.textContent = text || '';
@@ -911,88 +950,260 @@ Gợi ý: thêm từ khoá như an khang, tài lộc, bình an…</pre>
                     promptEl.addEventListener('input', clearSuccessOnUserEdit, opts);
                     promptEl.addEventListener('keydown', clearSuccessOnUserEdit, opts);
                 }
-                if (calligraphyToggle) {
-                    calligraphyToggle.addEventListener('change', clearSuccessOnUserEdit, opts);
+                if (titleEl) {
+                    titleEl.addEventListener('input', clearSuccessOnUserEdit, opts);
+                    titleEl.addEventListener('keydown', clearSuccessOnUserEdit, opts);
+                }
+                if (styleEl) {
+                    styleEl.addEventListener('change', clearSuccessOnUserEdit, opts);
+                }
+                if (remakeLyricsEl) {
+                    remakeLyricsEl.addEventListener('change', clearSuccessOnUserEdit, opts);
+                }
+                if (remakeLengthEl) {
+                    remakeLengthEl.addEventListener('change', clearSuccessOnUserEdit, opts);
+                }
+                if (remakeNoteEl) {
+                    remakeNoteEl.addEventListener('input', clearSuccessOnUserEdit, opts);
+                    remakeNoteEl.addEventListener('keydown', clearSuccessOnUserEdit, opts);
                 }
             }
+
+            function countLyricsWords(text) {
+                if (!text) return 0;
+                return (text.trim().split(/\s+/).filter(Boolean)).length;
+            }
+
+            function updateLyricsCount() {
+                if (!promptEl || !lyricsCountEl || !lyricsCounterEl) return;
+                const raw = (promptEl.value || '').trim();
+                const count = countLyricsWords(raw);
+                lyricsCountEl.textContent = String(count);
+                lyricsCounterEl.classList.toggle('is-over', count > LYRICS_WORD_LIMIT);
+            }
+
+            if (promptEl) {
+                promptEl.addEventListener('input', updateLyricsCount);
+            }
+            updateLyricsCount();
+
+            if (player) {
+                player.addEventListener('loadedmetadata', () => {
+                    const t = fmtTime(player.duration);
+                    if (t) {
+                        setStatus(`Đã tạo xong! Thời lượng: ${t}.`, 'success');
+                    } else {
+                        setStatus('Đã tạo xong! (Không đọc được thời lượng từ link MP3)', 'success');
+                    }
+                });
+                player.addEventListener('error', () => {
+                    setStatus('Không phát được MP3 (link bị chặn/CORS hoặc đã hết hạn).', 'error');
+                });
+            }
+
+            function setDownloadEnabled(enabled, href) {
+                if (!enabled) {
+                    btnDownload.classList.add('is-disabled');
+                    btnDownload.setAttribute('aria-disabled', 'true');
+                    btnDownload.setAttribute('href', '#');
+                    return;
+                }
+                btnDownload.classList.remove('is-disabled');
+                btnDownload.removeAttribute('aria-disabled');
+                btnDownload.setAttribute('href', href);
+            }
+
+            function saveToLocal(payload) {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                } catch (e) {
+                    // Ignore quota errors (mp3 can be larger than localStorage limit)
+                }
+            }
+
+            function loadFromLocal() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (!raw) return null;
+                    return JSON.parse(raw);
+                } catch {
+                    return null;
+                }
+            }
+
+            function clearLocal() {
+                try { localStorage.removeItem(STORAGE_KEY); } catch {}
+            }
+
+            function applyResult(result) {
+                const audioUrl = result && (result.audio_url || '');
+                const lyrics = result && (result.lyrics || '');
+
+                lyricsEl.textContent = lyrics || 'Chưa có lời.';
+
+                if (audioUrl) {
+                    player.src = audioUrl;
+                    try { player.load(); } catch {}
+                    setDownloadEnabled(true, audioUrl);
+                } else {
+                    player.removeAttribute('src');
+                    player.load();
+                    setDownloadEnabled(false);
+                }
+            }
+
+            function syncRemakeOptionsVisibility() {
+                const enabled = Boolean(remakeLyricsEl && remakeLyricsEl.checked);
+                if (remakeOptionsEl) {
+                    remakeOptionsEl.style.display = enabled ? '' : 'none';
+                }
+            }
+
+            if (remakeLyricsEl) {
+                remakeLyricsEl.addEventListener('change', () => {
+                    syncRemakeOptionsVisibility();
+                });
+            }
+            syncRemakeOptionsVisibility();
+
+            btnRestore.addEventListener('click', () => {
+                const saved = loadFromLocal();
+                if (!saved) {
+                    setStatus('Chưa có dữ liệu lưu trên trình duyệt.', 'error');
+                    return;
+                }
+                if (typeof saved.prompt === 'string') {
+                    promptEl.value = saved.prompt;
+                }
+                if (titleEl && typeof saved.title === 'string') {
+                    titleEl.value = saved.title;
+                }
+                if (styleEl && typeof saved.style === 'string') {
+                    styleEl.value = saved.style;
+                }
+                if (remakeLyricsEl) {
+                    remakeLyricsEl.checked = Boolean(saved.remake_lyrics);
+                }
+                if (remakeLengthEl && typeof saved.remake_length === 'string') {
+                    remakeLengthEl.value = saved.remake_length;
+                }
+                if (remakeNoteEl && typeof saved.remake_note === 'string') {
+                    remakeNoteEl.value = saved.remake_note;
+                }
+                syncRemakeOptionsVisibility();
+                updateLyricsCount();
+                setStatus('Đã khôi phục lần trước.', 'info');
+                applyResult(saved);
+            });
+
+            btnClear.addEventListener('click', () => {
+                promptEl.value = '';
+                if (titleEl) titleEl.value = '';
+                if (styleEl) styleEl.value = 'Pop, Upbeat';
+                if (remakeLyricsEl) remakeLyricsEl.checked = false;
+                if (remakeLengthEl) remakeLengthEl.value = 'same';
+                if (remakeNoteEl) remakeNoteEl.value = '';
+                syncRemakeOptionsVisibility();
+                updateLyricsCount();
+                lyricsEl.textContent = 'Nhấn “Tạo nhạc” để bắt đầu.\nGợi ý: thêm từ khoá như an khang, tài lộc, bình an…';
+                player.removeAttribute('src');
+                player.load();
+                setDownloadEnabled(false);
+                clearLocal();
+                setStatus('Đã xoá.', 'info');
+            });
 
             async function generateViaApi() {
-                const prompt = (promptEl.value || '').trim();
-                if (!prompt) {
-                    setStatus('Bạn hãy nhập prompt trước đã.', 'error');
+                const lyricsText = (promptEl.value || '').trim();
+                if (!lyricsText) {
+                    setStatus('Bạn hãy nhập lời bài hát trước đã.', 'error');
                     promptEl.focus();
                     return;
                 }
 
-                setStatus('Đang gọi AI tạo thơ…', 'info');
-                poemText.textContent = 'Đang tạo thơ…';
-
-                const res = await fetch('/api/generate-poem', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt })
-                });
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok || !json || json.status !== 'success') {
-                    const msg = (json && (json.error || json.message)) || 'Không thể tạo thơ. Kiểm tra server log / OPENAI_API_KEY.';
-                    setStatus(msg, 'error');
-                    poemText.textContent = 'Có lỗi khi tạo thơ.';
+                const wordCount = countLyricsWords(lyricsText);
+                if (wordCount > LYRICS_WORD_LIMIT) {
+                    setStatus(`Lời quá ${LYRICS_WORD_LIMIT} từ (${wordCount}). Hãy rút gọn hoặc chọn Remake.`, 'error');
+                    promptEl.focus();
                     return;
                 }
 
-                poemText.textContent = (json.poem || '').trim();
-                setStatus('Đã tạo xong! Bạn có thể bấm Copy để gửi.', 'success');
-                armDismissSuccessOnUserEdit();
-            }
+                const remakeEnabled = Boolean(remakeLyricsEl && remakeLyricsEl.checked);
+                const remakeLength = remakeEnabled ? ((remakeLengthEl && remakeLengthEl.value ? String(remakeLengthEl.value) : 'same').trim() || 'same') : 'same';
+                const remakeNote = remakeEnabled ? ((remakeNoteEl && remakeNoteEl.value ? String(remakeNoteEl.value) : '').trim()) : '';
 
-            async function copyPoem() {
-                const text = poemText.textContent || '';
-                if (!text.trim()) return;
+                let title = (titleEl && titleEl.value ? String(titleEl.value) : '').trim();
+                if (!title) {
+                    const firstLine = lyricsText.split(/\r?\n/).map(s => s.trim()).find(Boolean) || '';
+                    title = (firstLine || 'Sắc Xuân AI').slice(0, 80);
+                    if (titleEl) titleEl.value = title;
+                }
+
+                const style = (styleEl && styleEl.value ? String(styleEl.value) : '').trim() || 'Pop, Upbeat';
+
+                btnGenerate.disabled = true;
+                setDownloadEnabled(false);
+                setStatus('Đang tạo nhạc…', 'info');
+                lyricsEl.textContent = 'Đang xử lý…';
+
                 try {
-                    await navigator.clipboard.writeText(text);
-                    copyBtn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i>Đã copy';
-                    setTimeout(() => {
-                        copyBtn.innerHTML = '<i class="fa-regular fa-copy" aria-hidden="true"></i>Copy';
-                    }, 1200);
-                } catch {
-                    // Fallback
-                    const ta = document.createElement('textarea');
-                    ta.value = text;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(ta);
+                    const res = await fetch('/api/generate-music', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: lyricsText,
+                            remake_lyrics: remakeEnabled,
+                            remake_length: remakeLength,
+                            remake_note: remakeNote,
+                            // Kie.ai Suno API: prompt is treated as EXACT lyrics when custom_mode=true & instrumental=false
+                            custom_mode: true,
+                            instrumental: false,
+                            title,
+                            style
+                        })
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data || data.status !== 'success') {
+                        const msg = (data && (data.error || data.message)) || 'Không thể tạo nhạc. Kiểm tra server log / OPENAI_API_KEY.';
+                        throw new Error(msg);
+                    }
+
+                    const payload = {
+                        prompt: lyricsText,
+                        title,
+                        style,
+                        audio_url: data.audio_url,
+                        lyrics: data.lyrics || lyricsText,
+                        provider: data.provider,
+                        job_id: data.job_id,
+                        remake_lyrics: remakeEnabled,
+                        remake_length: remakeLength,
+                        remake_note: remakeNote,
+                        lyrics_provider: data.lyrics_provider,
+                        lyrics_model: data.lyrics_model,
+                        created_at: Date.now()
+                    };
+
+                    applyResult(payload);
+                    saveToLocal(payload);
+                    const trimmedNotice = data.prompt_truncated ? ' (Lời đã được cắt về 300 từ).' : '';
+                    setStatus(`Đã tạo xong! Đang tải thời lượng…${trimmedNotice}`, 'success');
+                    armDismissSuccessOnUserEdit();
+                } catch (e) {
+                    setStatus('Lỗi: ' + (e && e.message ? e.message : String(e)), 'error');
+                } finally {
+                    btnGenerate.disabled = false;
                 }
             }
 
-            document.querySelectorAll('.chip').forEach((chip) => {
-                chip.addEventListener('click', () => {
-                    const text = chip.getAttribute('data-k') || '';
-                    if (!text) return;
-                    promptEl.value = text;
-                    promptEl.focus();
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    generateViaApi();
                 });
-            });
+            }
 
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                generateViaApi();
-            });
-
-            regenBtn.addEventListener('click', () => {
-                generateViaApi();
-            });
-
-            copyBtn.addEventListener('click', () => {
-                copyPoem();
-            });
-
-            calligraphyToggle.addEventListener('change', () => {
-                poemText.classList.toggle('calligraphy', calligraphyToggle.checked);
-            });
-
-            // Initial
-            setStatus('', 'info');
         })();
     </script>
 </body>
